@@ -8,6 +8,8 @@ Add:
     - https://towardsdatascience.com/10x-faster-parallel-python-without-python-multiprocessing-e5017c93cce1
     - https://www.pyimagesearch.com/2019/09/09/multiprocessing-with-opencv-and-python/
 7. maybe save as h5pq and not as an images so it will be lighter?
+8. add requirement file
+
 
 
 

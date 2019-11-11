@@ -43,8 +43,7 @@ def main():
     data_loader = DataLoader(test_dataset, batch_size=args.batch_size,
                              shuffle=True)  # how to shift it to multiprocessing?
 
-
-    #we need to have train_loader, val loader and test loader
+    #Load the conv model
 
 if __name__=='__main__':
     main()
