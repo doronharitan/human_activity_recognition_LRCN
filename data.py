@@ -30,7 +30,7 @@ class UCF101Dataset(Dataset):
         # get all the images
         sample_video_frames = [image for image in os.listdir(self.data_path + os.sep) if sampled_video_name in image]
         #Todo replace it with globe import glob
-        # for name in glob.glob('dir/*'): or for name in glob.glob('dir/*[0-9].*'):
+        # for name in glob.glob('dir/*'): or for name in glob.glob('dir/*[0-9].*') use  https://stackoverflow.com/questions/38849001/get-specific-file-with-glob
         #     print name
         # random sampling of the frames we take from each video
         sample_video_frames = sample(sample_video_frames, self.num_frames_video)
@@ -109,7 +109,7 @@ class SplitData():
     def split_to_train_val(self, seed, smaller_dataset=False):
         X_train, X_Val, y_train, y_val =  train_test_split(self.xs, self.ys, test_size = 0.2, random_state = seed)
         if smaller_dataset:
-            _, self.xs, _, self.ys = train_test_split(self.xs, self.ys, test_size=0.005, random_state=seed)
+            _, self.xs, _, self.ys = train_test_split(self.xs, self.ys, test_size=0.001, random_state=seed)
             _ , self.xs_test = train_test_split(self.xs_test, test_size=0.1)
         else:
             return [X_train, y_train], [X_Val, y_val]
