@@ -55,20 +55,7 @@ class Main():
                     for index, x in enumerate(['train', 'val', 'test'])}
         plot_label_distrabution(datasets, self.folder_dir)
 
-        # work on a small dataset
-        if args.smaller_dataset:
-            total_train_len = len(train_data[0])
-            list_x,list_y = [], []
-            for idx in range(total_train_len):
-                x,y = datasets['train'].__getitem__(idx)            # run faster than using the dataloader
-                list_x.append(x)
-                list_y.append(y)
-            x, y = torch.stack(list_x)
-            y = torch.stack(list_y)
-            x, y = x.to(device), y.to(device)
-        #work with all of the data
-        else:
-            dataloaders = {x: DataLoader(datasets[x], batch_size=args.batch_size,
+        dataloaders = {x: DataLoader(datasets[x], batch_size=args.batch_size,
                                               shuffle=True, num_workers=args.num_workers)
                        for x in ['train', 'val', 'test']}
 
@@ -81,21 +68,14 @@ class Main():
         self.criterion = nn.CrossEntropyLoss()
 
         # todo add lr decay?
+        total_train_len = datasets['tarin']
         for epoch in range(args.epochs):
             self.train_loss = 0.0
-            if args.smaller_dataset:
-                args.batch_size = args.batch_size if total_train_len < args.batch_size else args.batch_size
-                for batch in range(0,total_train_len,args.batch_size):
-                    batch_end = args.batch_size if (batch + args.batch_size)  <= total_train_len else total_train_len - batch
-                    local_x = x[batch:batch + batch_end]
-                    local_y = y[batch:batch + batch_end]
+            with tqdm(total=len(total_train_len/args.batch_size)) as pbar:
+                for local_x, local_y in dataloaders['train']:
+                    local_x, local_y = local_x.to(device), local_y.to(device)
                     self.learining_step(local_x, local_y)
-            else:
-                with tqdm(total=len(total_train_len/args.batch_size)) as pbar:
-                    for local_x, local_y in dataloaders['train']:
-                        local_x, local_y = local_x.to(device), local_y.to(device)
-                        self.learining_step(local_x, local_y)
-                        pbar.update(1)
+                    pbar.update(1)
 
             print(self.train_loss, epoch)
             # change it to a fuction who can vizualize the results:
