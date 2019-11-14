@@ -32,7 +32,9 @@ parser.add_argument('--bidirectional', default=True, type=bool, help='set the LS
 parser.add_argument('--open_new_folder', default='debug', type=str,
                     help='open a new folder for saving the new info,'
                          ' if false the info would be saved in the project dir, if debug the info would be saved in debug folder(default:True)')
-
+parser.add_argument('--load_checkpoint', default=False, type=bool, help='Loading a checkpoint and continue training with it')
+parser.add_argument('--checkpoint_path', default='', type=str, help='Optional path to checkpoint model')
+parser.add_argument('--checkpoint_interval', default=5, type=int, help='Interval between saving model checkpoints')
 class Main():
     def __init__(self):
         super(Main, self).__init__()
@@ -60,10 +62,16 @@ class Main():
         print('Data prepared\nLoading model...')
         model = ConvLstm(args.latent_dim, args.hidden_size, args.lstm_layers, args.bidirectional, len(label_encoder))
         self.model = model.to(device)
-
         # setting optimizer and criterion parameters
         self.optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
         self.criterion = nn.CrossEntropyLoss()
+
+        if args.load_checkpoint:
+            checkpoint = torch.load(args.checkpoint_path)
+            self.model.load_state_dict(checkpoint['model_state_dict'])
+            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            args.epoch = args.epoch - checkpoint['epoch']
+            self.tensorboard_writer = checkpoint['tensorboard_state_dict']
 
         # todo add lr decay?
         for epoch in range(args.epochs):
@@ -78,7 +86,12 @@ class Main():
                                                   'val loss': self.val_loss}, epoch)
             self.tensorboard_writer.add_scalars('train/val accuracy', {'train_accuracy': self.train_acc,
                                                                    'val accuracy': self.val_acc}, epoch)
-
+            if epoch%args.checkpoint_interval == 0:
+                state_dict = {'epoch': epoch,
+                              'model_state_dict': self.model.state_dict(),
+                              'optimizer_state_dict': self.optimizer,
+                              'tensorboard_state_dict' : self.tensorboard_writer}
+                torch.save(state_dict, os.path.join(self.folder_dir, 'epoch_%d.pth.tar' %(epoch)))
             # todo change it to a fuction who can vizualize the results:
 
 
