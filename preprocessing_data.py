@@ -34,16 +34,16 @@ class UCF101Preprocessing():
     def create_sampled_data(self):
         if not os.path.exists(self.folder_dir):
             os.makedirs(self.folder_dir)
-            os.makedirs(self.folder_dir + os.sep + 'test')
-            os.makedirs(self.folder_dir + os.sep + 'train')
-            os.makedirs(self.folder_dir + os.sep + 'train_label')
+            os.makedirs(os.path.join(self.folder_dir, 'test'))
+            os.makedirs(os.path.join(self.folder_dir, 'train'))
+            os.makedirs(os.path.join(self.folder_dir, 'train_label'))
 
 
         for file in os.listdir(self.ucf_list_root):
             if 'test' in file:
-                save_path = self.folder_dir + os.sep + 'test' + os.sep
+                save_path = os.path.join(self.folder_dir, 'test')
             elif 'train' in file:
-                save_path = self.folder_dir + os.sep + 'train' + os.sep
+                save_path = os.path.join(self.folder_dir, 'train')
             else:
                 continue
             with open(self.ucf_list_root + file) as f:
@@ -56,7 +56,7 @@ class UCF101Preprocessing():
                     success, image = video_data.read()
                     while success:
                         if frame_count%self.sampling_rate==0:
-                            cv2.imwrite(save_path + video_name_save +"_frame%d.jpg" % frame_count, image)# save frame as JPEG file
+                            cv2.imwrite(os.path.join(save_path, video_name_save + "_frame%d.jpg" % frame_count), image)
                         success, image = video_data.read()
                         frame_count += 1
                     pbar.update(1)

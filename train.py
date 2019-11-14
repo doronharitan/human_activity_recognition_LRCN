@@ -92,7 +92,7 @@ class Main():
                     self.learining_step(local_x, local_y)
             else:
                 with tqdm(total=len(total_train_len/args.batch_size)) as pbar:
-                    for local_x, local_y in dataloaders['train']: #todo change when we have small data
+                    for local_x, local_y in dataloaders['train']:
                         local_x, local_y = local_x.to(device), local_y.to(device)
                         self.learining_step(local_x, local_y)
                         pbar.update(1)
