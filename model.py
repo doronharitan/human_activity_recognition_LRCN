@@ -8,10 +8,10 @@ class ConvLstm(nn.Module):
         self.conv_model = Conv(latent_dim)
         self.Lstm = Lstm(latent_dim, hidden_size, lstm_layers, bidirectional)
         self.output_layer = nn.Sequential(
-            nn.Linear(2 * hidden_size if bidirectional == True else hidden_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size,n_class),
-            nn.Softmax(dim = 2)
+            nn.Linear(2 * hidden_size if bidirectional == True else hidden_size, n_class),
+            # nn.ReLU(),
+            # nn.Linear(hidden_size,n_class),
+            nn.Softmax(dim=2)
         )
 
     def forward(self,x):

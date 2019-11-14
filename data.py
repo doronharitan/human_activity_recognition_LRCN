@@ -11,8 +11,8 @@ import time
 class UCF101Dataset(Dataset):
     def __init__(self, data_path, num_frames_video, data, mode):
         super(UCF101Dataset, self).__init__()
-        self.data_path = os.path.join(data_path, mode)
-        self.mode = mode
+        self.mode = mode if mode != 'val' else 'train'
+        self.data_path = os.path.join(data_path, self.mode)
         self.num_frames_video = num_frames_video
         self.xs = data[0]
         if mode != 'test':
@@ -35,12 +35,12 @@ class UCF101Dataset(Dataset):
         sample_video_frames = natsorted(sample_video_frames)
         sample_video_frames = sample_video_frames[sample_start_point : sample_start_point+5]
         for image in sample_video_frames:
-            img = Image.open(os.path.jpin(self.data_path, image))
+            img = Image.open(os.path.join(self.data_path, image))
             img = img.convert('RGB')
             img = self.transform(img)
             video_frames.append(img)
         img_stack = torch.stack(video_frames)
-        label = torch.from_numpy(np.asarray(int(self.ys[idx])))
+        label = torch.from_numpy(np.asarray(int(self.ys[idx]))).long()
         return img_stack, label
 
     def set_transforms(self):
@@ -94,14 +94,14 @@ class SplitData():
         for file in os.listdir(ucf_list_root):
             if 'train' in file:
                 with open(ucf_list_root + file) as f:
-                    self.video_list_train.append(f.readlines())
+                    self.video_list_train += f.readlines()
             elif 'classInd' in file:
                 with open(ucf_list_root + file) as f:
                     label_encoder = f.readlines()
                 self.label_encoder_dict = {x.split(' ')[0] : x.split(' ')[1].rstrip('\n') for x in label_encoder}
             else:
                 with open(ucf_list_root + file) as f:
-                    self.video_list_test.append(f.readlines())
+                    self.video_list_test += f.readlines()
 
     def split_to_train_val(self, seed, smaller_dataset=False):
         X_train, X_Val, y_train, y_val =  train_test_split(self.xs, self.ys, test_size = 0.2, random_state = seed)

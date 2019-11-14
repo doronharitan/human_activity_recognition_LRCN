@@ -17,13 +17,14 @@ def save_setting_info(args, device, folder_dir):
     setting_file_name = os.path.join(folder_dir, 'setting_info.txt')
     args_dict = args.__dict__
     with open(setting_file_name, 'w') as f:
-        for key, value in args_dict.items():
+        for key, value in args_dict.items(): #Todo print it using json
             f.write(key + ' : ' + str(value) + '\n')
         f.write(str(device))
     writer = SummaryWriter(folder_dir)
+    return writer
 
 
-def plot_label_distrabution(datasets, folder_dir):
+def plot_label_distribution(datasets, folder_dir):
     for dataset in datasets.keys():
         if dataset != 'test':
             plt.hist(datasets[dataset].ys, rwidth=0.9)

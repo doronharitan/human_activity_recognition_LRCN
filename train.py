@@ -1,18 +1,16 @@
 import torch
 import torch.nn as nn
 import argparse
-import os
+import math
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from data import UCF101Dataset, SplitData
 from model import ConvLstm
-import matplotlib.pyplot as plt
 from utils import *
-import time
 
 
 parser = argparse.ArgumentParser(description='UCF101 Action Recognition, LRCN architecture')
-parser.add_argument('--epochs', default=100, type=int, help='number of total epochs')
+parser.add_argument('--epochs', default=10, type=int, help='number of total epochs')
 parser.add_argument('--batch-size', default=16, type=int, help='mini-batch size (default:16)')
 parser.add_argument('--lr', default=5e-4, type=float, help='initial learning rate (default:5e-4')
 parser.add_argument('--num_workers', default=4, type=int,
@@ -44,7 +42,7 @@ class Main():
             self.folder_dir = open_new_folder(args.open_new_folder)
         else:
             self.folder_dir = os.getcwd()
-        save_setting_info(args, device, self.folder_dir)
+        self.tensorboard_writer = save_setting_info(args, device, self.folder_dir)
 
     def run(self):
         print('Initializing Datasets and Dataloaders...')
@@ -53,7 +51,7 @@ class Main():
         data = [train_data, val_data, test_data]
         datasets = {x: UCF101Dataset(args.sampled_data_path, args.num_frames_video, data[index], mode=x)
                     for index, x in enumerate(['train', 'val', 'test'])}
-        plot_label_distrabution(datasets, self.folder_dir)
+        plot_label_distribution(datasets, self.folder_dir)
 
         dataloaders = {x: DataLoader(datasets[x], batch_size=args.batch_size,
                                               shuffle=True, num_workers=args.num_workers)
@@ -68,36 +66,70 @@ class Main():
         self.criterion = nn.CrossEntropyLoss()
 
         # todo add lr decay?
-        total_train_len = datasets['tarin']
         for epoch in range(args.epochs):
-            self.train_loss = 0.0
-            with tqdm(total=len(total_train_len/args.batch_size)) as pbar:
-                for local_x, local_y in dataloaders['train']:
-                    local_x, local_y = local_x.to(device), local_y.to(device)
-                    self.learining_step(local_x, local_y)
-                    pbar.update(1)
+            self.train_loss, self.val_loss = 0.0 , 0.0
+            self.train_acc, self.val_acc = 0.0, 0.0
+            self.train_model(datasets['train'], dataloaders['train'], epoch)
+            self.test_model(datasets['val'], dataloaders['val'], epoch)
+            print('\nEpoch %d :\n Train loss %.3f, Val loss %.3f\n Train acc %.3f, Val acc %.3f\n================'
+                  %(epoch, self.train_loss, self.val_loss, self.train_acc, self.val_acc))
 
-            print(self.train_loss, epoch)
-            # change it to a fuction who can vizualize the results:
+            self.tensorboard_writer.add_scalars('train/val loss', {'train_loss': self.train_loss,
+                                                  'val loss': self.val_loss}, epoch)
+            self.tensorboard_writer.add_scalars('train/val accuracy', {'train_accuracy': self.train_acc,
+                                                                   'val accuracy': self.val_acc}, epoch)
+
+            # todo change it to a fuction who can vizualize the results:
 
 
-    def learining_step(self, x,y):
-        # zero the parameter gradients
-        self.optimizer.zero_grad()
+    def foward_step(self, x,y):
         # Must be done before you run a new batch. Otherwise the LSTM will treat a new batch as a continuation of a sequence
         self.model.Lstm.reset_hidden_state()
         output = self.model.forward(x)
-        loss = self.criterion(output, y)
-        #todo add a function which will evaluate the results. which one should we pix
-        self.train_loss += loss.item()
-        loss.backward()  # compute the gradients
-        self.optimizer.step()  # update the parameters with the gradients
+        output_avr_frames = output.mean(dim=1)
+        loss = self.criterion(output_avr_frames, y)
+        # Accuracy calculation
+        predicted_labels = output_avr_frames.detach().argmax(dim=1)
+        acc = (predicted_labels == y).cpu().numpy().sum()
+        return loss, acc
+
+    def train_model(self, dataset, dataloader, epoch):
+        self.model.train()
+        iter_number = math.ceil(dataset.__len__() / args.batch_size)
+        # print('Training epoch %d\n' %(epoch))
+        with tqdm(total=iter_number) as pbar:
+            for local_x, local_y in dataloader:
+                local_x, local_y = local_x.to(device), local_y.to(device)
+                # zero the parameter gradients
+                self.optimizer.zero_grad()
+                loss, acc = self.foward_step(local_x, local_y)
+                # todo add a function which will evaluate the results. which one should we pix
+                self.train_loss += loss.item()
+                self.train_acc += acc
+                loss.backward()  # compute the gradients
+                self.optimizer.step()  # update the parameters with the gradients
+                pbar.update(1)
+        self.train_acc = 100 * (self.train_acc/dataset.__len__())
+
+    def test_model(self, dataset, dataloader, epoch):
+        self.model.eval()
+        iter_number = math.ceil(dataset.__len__() / args.batch_size)
+        # print('validation epoch %d\n' %(epoch))
+        with tqdm(total=iter_number) as pbar:
+            for local_x, local_y in dataloader:
+                local_x, local_y = local_x.to(device), local_y.to(device)
+                loss, acc = self.foward_step(local_x, local_y)
+                # todo add a function which will evaluate the results. which one should we pix
+                self.val_loss += loss.item()
+                self.val_acc += acc
+                pbar.update(1)
+        self.val_acc = 100 * (self.val_acc/ dataset.__len__())
 
 
 if __name__=='__main__':
     args = parser.parse_args()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model_run = Main()  #todo ask Alex for a help in changing the name
-    model_run.run()
+    ActionRecognition = Main()  #todo ask Alex for a help in changing the name
+    ActionRecognition.run()
 
 
