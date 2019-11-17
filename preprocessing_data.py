@@ -9,11 +9,11 @@ import cv2
 
 parser = argparse.ArgumentParser(description='UCF101 Action Recognition, LRCN architecture')
 parser.add_argument('--root', default=r'C:\Users\Doron\Desktop\ObjectRecognition\UCF101_row_data/', type=str, help='path to find the UCF101 row data')
-parser.add_argument('--ucf_list_root', default=r'C:\Users\Doron\PycharmProjects\ObjectRecognition\Data_UCF101\UCF101_video_list/', type=str, help='path to find the UCF101 list splitting the data to train and test')
+parser.add_argument('--ucf_list_root', default=r'C:\Users\Doron\Google Drive\ObjectRecognition\Data_UCF101\UCF101_video_list/', type=str, help='path to find the UCF101 list splitting the data to train and test')
 parser.add_argument('--sampling_rate', default=10, type=int, help='how to sample the data')
 parser.add_argument('--sampled_data_dir', default=r'C:\Users\Doron\Desktop\ObjectRecognition\UCF101_sampled_data', type=str, help='the default path for the new sampled data')
 
-class UCF101Preprocessing():
+class UCF101Preprocessing():  # todo change documentation
     """"
     Create the sampled data,
     input - video,
@@ -36,10 +36,9 @@ class UCF101Preprocessing():
             os.makedirs(self.folder_dir)
             os.makedirs(os.path.join(self.folder_dir, 'test'))
             os.makedirs(os.path.join(self.folder_dir, 'train'))
-            os.makedirs(os.path.join(self.folder_dir, 'train_label'))
 
 
-        for file in os.listdir(self.ucf_list_root):
+        for file in os.listdir(self.ucf_list_root): #file_name todo
             if 'test' in file:
                 save_path = os.path.join(self.folder_dir, 'test')
             elif 'train' in file:
@@ -53,9 +52,9 @@ class UCF101Preprocessing():
                     video_name_save = video_name.split('.')[0].replace('/', ',')
                     video_data = cv2.VideoCapture(self.root + video_name.split(' ')[0])
                     frame_count = 0
-                    success, image = video_data.read()
+                    success, image = video_data.read() #todo, see if it change/ have any impact on the data type
                     while success:
-                        if frame_count%self.sampling_rate==0:
+                        if (frame_count % self.sampling_rate) == 0:
                             cv2.imwrite(os.path.join(save_path, video_name_save + "_frame%d.jpg" % frame_count), image)
                         success, image = video_data.read()
                         frame_count += 1
@@ -63,7 +62,7 @@ class UCF101Preprocessing():
 
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':      #todo remove from OOP
     arg = parser.parse_args()
     data_processor = UCF101Preprocessing()
     data_processor.create_sampled_data()
