@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from data import UCF101Dataset
 from model import ConvLstm
 from utils_action_recognition import *
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 
 # todo check if I need to capitalize
 parser = argparse.ArgumentParser(description='UCF101 Action Recognition, LRCN architecture')
@@ -61,7 +61,7 @@ def main():
     else:
         folder_dir = args.local_dir
     save_setting_info(args, device, folder_dir)
-    tensorboard_writer = SummaryWriter(folder_dir)
+    # tensorboard_writer = SummaryWriter(folder_dir)
 
     print('Initializing Datasets and Dataloaders...')
     train_data_names, val_data_names, test_data_names, label_decoder_dict = split_data(args.ucf_list_root, args.seed,
@@ -150,10 +150,10 @@ def main():
             plt.close()
             print('Epoch %d : Train loss %.3f, Train acc %.3f, Val loss %.3f, Val acc %.3f, epoch time %.3f'
                   % (epoch,train_loss, train_acc, val_loss, val_acc, end_epoch - start_epoch))
-            tensorboard_writer.add_scalars('train/val loss', {'train_loss': train_loss,
-                                                              'val loss': val_loss}, epoch)
-            tensorboard_writer.add_scalars('train/val accuracy', {'train_accuracy': train_acc,
-                                                                  'val accuracy': val_acc}, epoch)
+            # tensorboard_writer.add_scalars('train/val loss', {'train_loss': train_loss,
+            #                                                   'val loss': val_loss}, epoch)
+            # tensorboard_writer.add_scalars('train/val accuracy', {'train_accuracy': train_acc,
+            #                                                       'val accuracy': val_acc}, epoch)
         if (epoch % args.checkpoint_interval) == 0:
             hp_dict = {'epoch': epoch,
                        'model_state_dict': model.state_dict(),
