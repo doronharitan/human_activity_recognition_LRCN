@@ -7,7 +7,7 @@ from random import sample
 import torchvision.transforms as transforms
 # from natsort import natsorted
 import skvideo
-skvideo.setFFmpegPath(r"C:\Users\Doron\Documents\ffmpeg-20191106-fc7b6d5-win64-static\bin")
+# skvideo.setFFmpegPath(r"C:\Users\Doron\Documents\ffmpeg-20191106-fc7b6d5-win64-static\bin")
 import skvideo.io
 
 
