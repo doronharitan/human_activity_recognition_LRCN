@@ -14,8 +14,7 @@ class UCF101Dataset(Dataset):
         self.data_path = os.path.join(data_path, mode if mode != 'val' else 'train')
         self.num_frames_video = num_frames_video
         self.xs = data[0]
-        if mode != 'test':
-            self.ys = data[1]
+        self.ys = data[1]
         self.set_transforms()
 
     # ====== Override to give PyTorch size of dataset ======

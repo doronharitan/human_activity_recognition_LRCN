@@ -50,9 +50,9 @@ def main():
     args = parser.parse_args()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     folder_dir = set_project_folder_dir(args.open_new_folder, args.local_dir)
-    print('The setting of the run are:\n %s' % args)
-    print('The training would take place on %s' % device)
-    print('The project directory is %s' % folder_dir)
+    print('The setting of the run are:\n{}\n'.format(args))
+    print('The training would take place on {}\n'.format(device))
+    print('The project directory is {}'.format(folder_dir))
     save_setting_info(args, device, folder_dir)
     tensorboard_writer = SummaryWriter(folder_dir)
 
@@ -68,7 +68,7 @@ def main():
     # ======= if args.smaller_dataset True load small portion of the dataset directly to the RAM (for faster computation) ======
     if args.smaller_dataset:
         dataloaders = get_small_dataset_dataloader(dataloaders, dataset_order, args.batch_size)
-    plot_label_distribution(dataloaders, folder_dir)
+    plot_label_distribution(dataloaders, folder_dir, args.smaller_dataset)
     print('Data prepared\nLoading model...')
     num_class = len(label_decoder_dict) if args.number_of_classes is None else args.number_of_classes
     model = ConvLstm(args.latent_dim, args.hidden_size, args.lstm_layers, args.bidirectional, num_class)
@@ -83,16 +83,16 @@ def main():
     # ====== start training the model ======
     for epoch in range(args.epochs):
         start_epoch = time.time()
-        train_loss, train_acc = train_model(model, datasets['train'], dataloaders['train'], device, optimizer,
+        train_loss, train_acc = train_model(model, dataloaders['train'], device, optimizer,
                                             criterion)
         if (epoch % args.val_check_interval) == 0:
-            val_loss, val_acc, predicted_labels, local_x = test_model(model, datasets['val'], dataloaders['val'], device,
+            val_loss, val_acc, predicted_labels, images = test_model(model, dataloaders['val'], device,
                                            criterion)
-            plot_images_with_predicted_labels(local_x, label_decoder_dict, predicted_labels, folder_dir, epoch)
+            plot_images_with_predicted_labels(images, label_decoder_dict, predicted_labels, folder_dir, epoch)
             end_epoch = time.time()
             # ====== print the status to the console and write it in tensorboard =======
-            print('Epoch %d : Train loss %.3f, Train acc %.3f, Val loss %.3f, Val acc %.3f, epoch time %.3f'
-                  % (epoch,train_loss, train_acc, val_loss, val_acc, end_epoch - start_epoch))
+            print('Epoch {} : Train loss {:.3f}, Train acc {:.3f}, Val loss {:.3f}, Val acc {:.3f}, epoch time {:.4f}'
+                  .format(epoch,train_loss, train_acc, val_loss, val_acc, end_epoch - start_epoch))
             tensorboard_writer.add_scalars('train/val loss', {'train_loss': train_loss,
                                                               'val loss': val_loss}, epoch)
             tensorboard_writer.add_scalars('train/val accuracy', {'train_accuracy': train_acc,
@@ -103,7 +103,7 @@ def main():
             hp_dict = {'model_state_dict': model.state_dict()}
             save_model_dir = os.path.join(folder_dir, 'Saved_model_checkpoints')
             create_folder_dir_if_needed(save_model_dir)
-            torch.save(hp_dict, os.path.join(save_model_dir, 'epoch_%d.pth.tar' % (epoch)))
+            torch.save(hp_dict, os.path.join(save_model_dir, 'epoch_{}.pth.tar'.format(epoch)))
 
 
 if __name__ == '__main__':
