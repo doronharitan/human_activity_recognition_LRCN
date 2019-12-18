@@ -15,7 +15,7 @@ from random import sample
 
 def set_project_folder_dir(if_open_new_folder, local_dir):
     if if_open_new_folder != 'False':
-        folder_dir = open_new_folder(open_new_folder, local_dir)
+        folder_dir = open_new_folder(if_open_new_folder, local_dir)
     else:
         folder_dir = local_dir
     return folder_dir
@@ -49,10 +49,11 @@ def plot_label_distribution(dataloaders, folder_dir):
             plt.savefig(os.path.join(folder_dir, dataloader_name + '.jpg'))
             plt.clf()
 
-def split_data(ucf_list_root, seed, number_of_classes, split_size):
+def split_data(ucf_list_root, seed, number_of_classes, split_size, folder_dir):
     video_names_train, video_names_test, labels, labels_decoder_dict = get_video_list(ucf_list_root, number_of_classes)
     video_names_train, video_names_val, labels_train, labels_val = train_test_split(video_names_train, labels, test_size=split_size, random_state=seed)
-    return [video_names_train, labels_train], [video_names_val, labels_val], [video_names_test], labels_decoder_dict
+    save_video_names_test_and_add_labels(video_names_test, labels_decoder_dict, folder_dir)
+    return [video_names_train, labels_train], [video_names_val, labels_val], labels_decoder_dict
 
 
 def get_data(mode, video_names, list, number_of_classes, labels=[]):
@@ -88,6 +89,21 @@ def get_video_list(ucf_list_root, number_of_classes):
                 video_names = f.readlines()
             video_names_test, _ = get_data('test', video_names, video_names_test, number_of_classes)
     return video_names_train, video_names_test, labels, labels_decoder_dict
+
+
+def save_video_names_test_and_add_labels(video_names_test, labels_decoder_dict, folder_dir):
+    save_test_video_details = os.path.join(folder_dir, 'test_videos_detailes.txt')
+    with open(save_test_video_details, 'w') as f:
+            for text_video_name in video_names_test:
+                label_string = text_video_name.split('/')[0]
+                # endoce label
+                for key,value in labels_decoder_dict.items():
+                    if value == label_string:
+                        label_code = key
+                    else:
+                        continue
+                f.write(text_video_name + ' ' + str(label_code) + '\n')
+
 
 
 def plot_images_with_predicted_labels(local_x, label_decoder_dict, predicted_labels, folder_dir, epoch):

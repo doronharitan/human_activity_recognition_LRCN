@@ -5,7 +5,6 @@ from PIL import Image
 import os
 import torchvision.transforms as transforms
 import skvideo
-# skvideo.setFFmpegPath(r"C:\Users\Doron\Documents\ffmpeg-20191106-fc7b6d5-win64-static\bin")
 import skvideo.io
 
 
