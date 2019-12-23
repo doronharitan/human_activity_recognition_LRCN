@@ -11,7 +11,7 @@ from utils_action_recognition import save_setting_info, plot_label_distribution,
 from torch.utils.tensorboard import SummaryWriter
 import os
 
-
+#todo change to root or dor or path
 parser = argparse.ArgumentParser(description='UCF101 Action Recognition, LRCN architecture')
 parser.add_argument('--epochs', default=100, type=int, help='number of total epochs')
 parser.add_argument('--batch-size', default=32, type=int, help='mini-batch size (default:32)')
@@ -19,15 +19,15 @@ parser.add_argument('--lr', default=5e-4, type=float, help='initial learning rat
 parser.add_argument('--num_workers', default=4, type=int,
                     help='initial num_workers, the number of processes that generate batches in parallel (default:4)')
 parser.add_argument('--split_size', default=0.2, type=int, help='set the size of the split size between validation data and train data')
-parser.add_argument('--sampled_data_path', default=r'C:\Users\Doron\Desktop\ObjectRecognition data\UCF101_sampled_data_video_10', type=str
+parser.add_argument('--sampled_data_dir', default=r'C:\Users\Doron\Desktop\ObjectRecognition data\UCF101_sampled_data_video_10', type=str
                     , help='The dir for the sampled row data')
-parser.add_argument('--ucf_list_root', default=r'C:\Users\Doron\Google Drive\Object detection light\Data_UCF101\UCF101_video_list - Copy (2)/',
+parser.add_argument('--ucf_list_dir', default=r'C:\Users\Doron\Google Drive\Object detection light\Data_UCF101\UCF101_video_list/',
                     type=str, help='path to find the UCF101 list, splitting the data to train and test')
 parser.add_argument('--num_frames_video', default=5, type=int,
                     help='The number of frames that would be sampled from each video (default:5)')
 parser.add_argument('--seed', default=42, type=int,
                     help='initializes the pseudorandom number generator on the same number (default:42)')
-parser.add_argument('--smaller_dataset', default=True, type=bool,
+parser.add_argument('--smaller_dataset', default=False, type=bool,
                     help='Train the network on smaller dataset, mostly uuseful for debug mode. (default:False')
 parser.add_argument('--latent_dim', default=512, type=int, help='The dim of the Conv FC output (default:512)')
 parser.add_argument('--hidden_size', default=256, type=int,
@@ -42,7 +42,7 @@ parser.add_argument('--checkpoint_path', default='', type=str, help='Optional pa
 parser.add_argument('--checkpoint_interval', default=5, type=int, help='Interval between saving model checkpoints')
 parser.add_argument('--val_check_interval', default=5, type=int, help='Interval between running validation test')
 parser.add_argument('--local_dir', default=os.getcwd(), help='The local directory of the project, setting where to save the results of the run')
-parser.add_argument('--number_of_classes', default=None, type=int, help='The number of classes we would train on')
+parser.add_argument('--number_of_classes', default=55, type=int, help='The number of classes we would train on')
 
 def main():
     # ====== set the run settings ======
@@ -56,9 +56,9 @@ def main():
     tensorboard_writer = SummaryWriter(folder_dir)
 
     print('Initializing Datasets and Dataloaders...')
-    train_data_names, val_data_names, label_decoder_dict = split_data(args.ucf_list_root, args.seed, args.number_of_classes, args.split_size, folder_dir)
+    train_data_names, val_data_names, label_decoder_dict = split_data(args.ucf_list_dir, args.seed, args.number_of_classes, args.split_size, folder_dir)
     dataset_order = ['train', 'val']
-    datasets = {dataset_order[index]: UCF101Dataset(args.sampled_data_path,
+    datasets = {dataset_order[index]: UCF101Dataset(args.sampled_data_dir,
                                                     args.num_frames_video, x, mode=dataset_order[index])
                 for index, x in enumerate([train_data_names, val_data_names])}
     dataloaders = {x: DataLoader(datasets[x], batch_size=args.batch_size,

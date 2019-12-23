@@ -59,7 +59,7 @@ def plot_distribution(dataset, dataset_name, small_data_set_mode, folder_dir):
     if small_data_set_mode:
         plt.hist(dataset.tensors[1], rwidth=0.9)
     else:
-        plt.hist(dataset.ys, rwidth=0.9)
+        plt.hist(dataset.labels, rwidth=0.9)
     plt.title('Histogram showing the frequency of each label\n' + dataset_name)
     plt.xlabel('label')
     plt.ylabel('Frequency')
@@ -70,7 +70,7 @@ def plot_distribution(dataset, dataset_name, small_data_set_mode, folder_dir):
 def split_data(ucf_list_root, seed, number_of_classes, split_size, folder_dir):
     video_names_train, video_names_test, labels, labels_decoder_dict = get_video_list(ucf_list_root, number_of_classes)
     video_names_train, video_names_val, labels_train, labels_val = train_test_split(video_names_train, labels, test_size=split_size, random_state=seed)
-    save_video_names_test_and_add_labels(video_names_test, labels_decoder_dict, folder_dir)
+    save_video_names_test_and_add_labels(video_names_test, labels_decoder_dict, folder_dir, number_of_classes)
     # save labels_decoder_dict
     with open(os.path.join(folder_dir,'labels_decoder_dict.pkl'), 'wb') as f:
         pickle.dump(labels_decoder_dict, f, pickle.HIGHEST_PROTOCOL)
@@ -112,7 +112,7 @@ def get_video_list(ucf_list_root, number_of_classes):
     return video_names_train, video_names_test, labels, labels_decoder_dict
 
 
-def save_video_names_test_and_add_labels(video_names_test, labels_decoder_dict, folder_dir):
+def save_video_names_test_and_add_labels(video_names_test, labels_decoder_dict, folder_dir,number_of_classes):
     save_test_video_details = os.path.join(folder_dir, 'test_videos_detailes.txt')
     with open(save_test_video_details, 'w') as f:
             for text_video_name in video_names_test:
@@ -123,7 +123,10 @@ def save_video_names_test_and_add_labels(video_names_test, labels_decoder_dict, 
                         label_code = key
                     else:
                         continue
-                f.write(text_video_name + ' ' + str(label_code) + '\n')
+                if number_of_classes is None or label_code in range(1, number_of_classes + 1):
+                    f.write(text_video_name + ' ' + str(label_code) + '\n')
+                else:
+                    continue
 
 
 
