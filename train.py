@@ -3,8 +3,8 @@ import torch.nn as nn
 import argparse
 import time
 from torch.utils.data import DataLoader
-from data import UCF101Dataset
-from model import ConvLstm
+from create_dataset import UCF101Dataset
+from lrcn_model import ConvLstm
 from utils_action_recognition import save_setting_info, plot_label_distribution, \
     plot_images_with_predicted_labels,  create_folder_dir_if_needed, get_small_dataset_dataloader, split_data, \
     test_model, train_model, save_loss_info_into_a_file, set_project_folder_dir
@@ -44,7 +44,6 @@ parser.add_argument('--val_check_interval', default=5, type=int, help='Interval 
 parser.add_argument('--local_dir', default=os.getcwd(), help='The local directory of the project, setting where to save the results of the run')
 parser.add_argument('--number_of_classes', default=None, type=int, help='The number of classes we would train on')
 
-
 def main():
     # ====== set the run settings ======
     args = parser.parse_args()
@@ -83,15 +82,14 @@ def main():
     # ====== start training the model ======
     for epoch in range(args.epochs):
         start_epoch = time.time()
-        train_loss, train_acc = train_model(model, dataloaders['train'], device, optimizer,
-                                            criterion)
+        train_loss, train_acc = train_model(model, dataloaders['train'], device, optimizer, criterion)
         if (epoch % args.val_check_interval) == 0:
             val_loss, val_acc, predicted_labels, images = test_model(model, dataloaders['val'], device,
                                            criterion)
             plot_images_with_predicted_labels(images, label_decoder_dict, predicted_labels, folder_dir, epoch)
             end_epoch = time.time()
             # ====== print the status to the console and write it in tensorboard =======
-            print('Epoch {} : Train loss {:.3f}, Train acc {:.3f}, Val loss {:.3f}, Val acc {:.3f}, epoch time {:.4f}'
+            print('Epoch {} : Train loss {:.8f}, Train acc {:.3f}, Val loss {:.8f}, Val acc {:.3f}, epoch time {:.4f}'
                   .format(epoch,train_loss, train_acc, val_loss, val_acc, end_epoch - start_epoch))
             tensorboard_writer.add_scalars('train/val loss', {'train_loss': train_loss,
                                                               'val loss': val_loss}, epoch)

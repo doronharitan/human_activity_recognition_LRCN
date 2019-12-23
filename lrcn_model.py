@@ -1,20 +1,17 @@
 import torch.nn as nn
 from torchvision import models
-import time
 
 class ConvLstm(nn.Module):
     def __init__(self, latent_dim, hidden_size, lstm_layers, bidirectional, n_class):
         super(ConvLstm, self).__init__()
-        self.conv_model = Conv(latent_dim)  #new name pretrain conv
+        self.conv_model = Pretrained_conv(latent_dim)
         self.Lstm = Lstm(latent_dim, hidden_size, lstm_layers, bidirectional)
         self.output_layer = nn.Sequential(
-            nn.Linear(2 * hidden_size if bidirectional == True else hidden_size, n_class),
-            # nn.ReLU(),
-            # nn.Linear(hidden_size,n_class),
+            nn.Linear(2 * hidden_size if bidirectional == True else hidden_size, n_class), #todo explain why I have here softmax
             nn.Softmax(dim=-1)
         )
 
-    def forward(self,x):
+    def forward(self, x):
         batch_size, timesteps, channel_x, h_x, w_x = x.shape
         conv_input = x.view(batch_size * timesteps, channel_x, h_x, w_x)
         conv_output = self.conv_model(conv_input)
@@ -24,9 +21,9 @@ class ConvLstm(nn.Module):
         output = self.output_layer(lstm_output)
         return output
 
-class Conv(nn.Module):
+class Pretrained_conv(nn.Module):
     def __init__(self, latent_dim):
-        super(Conv, self).__init__()
+        super(Pretrained_conv, self).__init__()
         self.conv_model = models.resnet152(pretrained=True)
         # ====== freezing all of the layers ======
         for param in self.conv_model.parameters():
