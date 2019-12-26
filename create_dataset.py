@@ -9,16 +9,13 @@ import skvideo.io
 
 
 class UCF101Dataset(Dataset):
-    def __init__(self, data_path,  num_frames_video, data, mode, normalize_figure=True):
+    def __init__(self, data_path,  num_frames_video, data, mode):
         super(UCF101Dataset, self).__init__()
         self.data_path = os.path.join(data_path, mode if mode != 'val' else 'train')
         self.num_frames_video = num_frames_video
         self.images = data[0]
         self.labels = data[1]
-        self.normalize_figure = normalize_figure
         self.set_transforms()
-
-
 
     # ====== Override to give PyTorch size of dataset ======
     def __len__(self):
@@ -39,12 +36,10 @@ class UCF101Dataset(Dataset):
 
     def set_transforms(self):
         # ===== the separated transform for train and test was done in the preprocessing data script =======
-        if self.normalize_figure:
-            self.transform = transforms.Compose([transforms.ToTensor(),
+        self.transform = transforms.Compose([transforms.ToTensor(),
                                             transforms.Normalize(mean=(0.485, 0.456, 0.406),
                                                                  std=(0.229, 0.224, 0.225))])
-        else:
-            self.transform = transforms.ToTensor()
+
 
 
 

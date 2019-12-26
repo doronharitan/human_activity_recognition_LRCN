@@ -15,6 +15,7 @@ import numpy as np
 import matplotlib.animation as manimation
 import matplotlib.patheffects as pe
 from collections import Counter
+from sklearn.metrics import confusion_matrix
 
 def set_project_folder_dir(if_open_new_folder, local_dir, use_model_folder_dir=False, mode=None):
     if use_model_folder_dir:
@@ -243,17 +244,23 @@ def train_model(model, dataloader, device, optimizer, criterion):
     return train_loss, train_acc
 
 
-def test_model(model, dataloader, device, criterion):
+def test_model(model, dataloader, device, criterion, mode='test'):
     val_loss, val_acc = 0.0, 0.0
     model.eval()
+    if mode == 'save_prediction_label_list':
+        prediction_labels_list = []
     with tqdm(total=len(dataloader)) as pbar:
     # with tqdm_notebook(total=len(dataloader)) as pbar:
         for local_images, local_labels in dataloader:
             local_images, local_labels = local_images.to(device), local_labels.to(device)
             loss, acc, predicted_labels = foward_step(model, local_images, local_labels, criterion, mode='test')
+            if mode == 'save_prediction_label_list':
+                prediction_labels_list += [predicted_labels]
             val_loss += loss.item()
             val_acc += acc
             pbar.update(1)
+    if mode == 'save_prediction_label_list':
+        predicted_labels = prediction_labels_list
     val_acc = 100 * (val_acc / dataloader.dataset.__len__())
     val_loss = val_loss / len(dataloader)
     return val_loss, val_acc, predicted_labels, local_images.cpu()
@@ -364,31 +371,38 @@ def create_new_video(save_path, video_name, image_array):
     cv2.destroyAllWindows()
 
 def create_video_with_labels(save_path, video_name, image_array, continues_labels, predicted_labels, label_decoder_dict):
-    bool_array = continues_labels == predicted_labels
     image_array = image_array.transpose(2, 1).transpose(2, 3).numpy()
-    n_frames = len(predicted_labels)
+    n_frames = len(image_array)
     h_fig = plt.figure(figsize=(4, 4))
     h_ax = h_fig.add_axes([0.05, 0.05, 0.9, 0.87])
-    h_im = h_ax.matshow(image_array[0])
+    img = (image_array[0] - image_array[0].min()) / (image_array[0].max() - image_array[0].min())
+    h_im = h_ax.matshow(img)
     h_ax.set_axis_off()
     h_im.set_interpolation('none')
     h_ax.set_aspect('equal')
-    h_text_1 = plt.text(0.02, 0.97, 'Original_labels', color='black', fontsize=8, transform=plt.gcf().transFigure)
-    h_text_2 = plt.text(0.02, 0.94, 'Predicted_labels', color='blue', fontsize=8, transform=plt.gcf().transFigure)
-    h_text_3 = plt.text(0.47, 0.01, 'True/False', color='red', fontsize=8, transform=plt.gcf().transFigure,
-                        path_effects=[pe.withStroke(linewidth=1, foreground="black")])
+    if continues_labels is not None:
+        bool_array = continues_labels == predicted_labels
+        h_text_1 = plt.text(0.02, 0.97, 'Original_labels', color='black', fontsize=8, transform=plt.gcf().transFigure)
+        h_text_3 = plt.text(0.47, 0.01, 'True/False', color='red', fontsize=8, transform=plt.gcf().transFigure,
+                            path_effects=[pe.withStroke(linewidth=1, foreground="black")])
+    h_text_2 = plt.text(0.02, 0.94, 'Predicted labels - {}'.format(label_decoder_dict[predicted_labels[0].item()]), color='blue', fontsize=8, transform=plt.gcf().transFigure)
+
     FFMpegWriter = manimation.writers['ffmpeg']
     metadata = dict(title=video_name, artist='Matplotlib')
     writer = FFMpegWriter(fps=3, metadata=metadata)
     with writer.saving(h_fig, os.path.join(save_path, video_name), dpi=150):  # change from 600 dpi
         for i in range(n_frames):
-            h_im.set_array(image_array[i])
-            h_text_1.set_text('Original label - {}'.format(label_decoder_dict[continues_labels[i].item()]))
-            h_text_2.set_text('Predicted labels - {}'.format(label_decoder_dict[predicted_labels[i].item()]))
-            color = 'green' if bool_array[i].item() else 'red'
-            h_text_3.remove()
-            h_text_3 = plt.text(0.44, 0.01, str(bool_array[i].item()), color=color, fontsize=8, transform=plt.gcf().transFigure,
-                                path_effects=[pe.withStroke(linewidth=1, foreground="black")])
+            if continues_labels is not None:
+                h_text_1.set_text('Original label - {}'.format(label_decoder_dict[continues_labels[i].item()]))
+                color = 'green' if bool_array[i].item() else 'red'
+                h_text_3.remove()
+                h_text_3 = plt.text(0.44, 0.01, str(bool_array[i].item()), color=color, fontsize=8,
+                                    transform=plt.gcf().transFigure,
+                                    path_effects=[pe.withStroke(linewidth=1, foreground="black")])
+                h_text_2.set_text('Predicted labels - {}'.format(label_decoder_dict[predicted_labels[i].item()]))
+
+            img = (image_array[i] - image_array[i].min()) / (image_array[i].max() - image_array[i].min())
+            h_im.set_array(img)
             writer.grab_frame()
     plt.close()
 
@@ -413,14 +427,60 @@ def load_test_data(model_dir):
     for video_name_with_label in video_list:
         video_name, label = video_name_with_label.split(' ')
         test_videos_names += [video_name]
-        labels += [label]
+        labels += [int(label.rstrip('\n'))]
     # open labels_decoder_dict
     with open(os.path.join(globel_dir,'labels_decoder_dict.pkl'), 'rb') as f:
         labels_decoder_dict = pickle.load(f)
     return test_videos_names, labels, labels_decoder_dict
 
-def set_transforms():
-    # ===== the separated transform for train and test was done in the preprocessing data script =======
-    transform = transforms.Normalize(mean=(0.485, 0.456, 0.406),
-                                                             std=(0.229, 0.224, 0.225))
-    return transform
+
+def plot_confusion_matrix(predicted_labels, true_labels, label_decoder_dict, save_path):
+    class_order_to_plot = list(label_decoder_dict.keys())[:true_labels.max()+1]
+    cm = confusion_matrix(true_labels, predicted_labels, labels=class_order_to_plot, normalize='true')
+    # ==== plot the cm as heatmap ======
+    plt.figure(figsize=(8, 6))
+    plt.imshow(cm, interpolation='none', aspect='auto', cmap=plt.cm.Blues)
+    cb = plt.colorbar()
+    cb.ax.tick_params(labelsize=10)
+    x_labels = [label_decoder_dict[label_code] for label_code in class_order_to_plot]
+    plt.xticks(class_order_to_plot, x_labels, rotation=90, fontsize=6)
+    plt.yticks(class_order_to_plot, x_labels, fontsize=6)
+    plt.title('Normalized confusion matrix')
+    plt.tight_layout()
+    plt.savefig(os.path.join(save_path, 'Normalized_confusion_matrix.png'), dpi=300, bbox_inches='tight')
+    plt.close()
+
+def plot_acc_per_class(predicted_labels, true_labels, label_decoder_dict, save_path):
+    # ===== count the number of times each class appear in the test data =====
+    frequency_of_each_class = Counter(true_labels)
+    # ===== count the number of times each class is labeled correctly =======
+    class_list = list(label_decoder_dict.keys())[: true_labels.max()+1]
+    acc = true_labels == predicted_labels
+    counter_correct_labeled = Counter()
+    for index, true_label in enumerate(true_labels):
+        counter_correct_labeled[true_label.item()] += acc[index].item()
+    # ==== calculate the accuracy to predict each class =====
+    acc_per_class = []
+    mean_frequency = sum(list(frequency_of_each_class.values())) / len(frequency_of_each_class)
+    classes_with_lower_frequency_compare_to_average = []
+    for class_ in class_list:
+        acc_per_class += [counter_correct_labeled[class_]/frequency_of_each_class[class_] * 100]
+        if frequency_of_each_class[class_] <= (0.9 * mean_frequency):
+            classes_with_lower_frequency_compare_to_average += [class_]
+    acc_classes_with_lower_frequency_compare_to_average = [acc_per_class[class_] for class_ in classes_with_lower_frequency_compare_to_average]
+    plt.figure(figsize=(10,10))
+    plt.bar(class_list, acc_per_class)
+    plt.bar(classes_with_lower_frequency_compare_to_average, acc_classes_with_lower_frequency_compare_to_average, color='red')
+    x_labels = [label_decoder_dict[label_code] for label_code in class_list]
+    plt.xticks(class_list, x_labels, rotation=90, fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.xlabel('Classes')
+    plt.ylabel('Accuracy [%]')
+    plt.xlim(-1, class_list[-1] + 1)
+    plt.legend(['freq > 0.9 * clavr freq of a ass', 'freq <= 0.9 * avr freq of a class'])
+    plt.title('The accuracy score for each class')
+    plt.tight_layout()
+    plt.savefig(os.path.join(save_path,'The_accuracy_score_for_each_class.png'), dpi=300, bbox_inches='tight')
+    plt.close()
+
+

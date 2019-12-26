@@ -17,7 +17,7 @@ class ConvLstm(nn.Module):
         conv_output = self.conv_model(conv_input)
         lstm_input = conv_output.view(batch_size, timesteps, -1)
         lstm_output = self.Lstm(lstm_input)
-        lstm_output = lstm_output[:, -1 ,   :]
+        lstm_output = lstm_output[:, -1, :]
         output = self.output_layer(lstm_output)
         return output
 

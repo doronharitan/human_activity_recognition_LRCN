@@ -23,13 +23,13 @@ def main():
     print('The project directory is {}' .format(folder_dir))
     save_setting_info(args, device, folder_dir)
     test_videos_names, labels, label_decoder_dict = load_test_data(args.model_dir)
-    dataset = UCF101Dataset(args.sampled_data_path, args.num_frames_video, [test_videos_names, labels], mode='test', normalize_figure=False)
+    dataset = UCF101Dataset(args.sampled_data_path, args.num_frames_video, [test_videos_names, labels], mode='test')
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 
     # ======= if args.smaller_dataset True load small portion of the dataset directly to the RAM (for faster computation) ======
     if args.smaller_dataset:
         dataloader = get_small_dataset_dataloader_test(dataloader, args.batch_size)
-    plot_label_distribution(dataloader, folder_dir, args.smaller_dataset, mode='test')
+    plot_label_distribution(dataloader, folder_dir, args.smaller_dataset, label_decoder_dict, mode='test')
     print('Data prepared\nLoading model...')
     num_class = len(label_decoder_dict) if args.number_of_classes is None else args.number_of_classes
     model = ConvLstm(args.latent_dim, args.hidden_size, args.lstm_layers, args.bidirectional, num_class)
