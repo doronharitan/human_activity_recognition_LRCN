@@ -67,7 +67,7 @@ def main():
     # ======= if args.smaller_dataset True load small portion of the dataset directly to the RAM (for faster computation) ======
     if args.smaller_dataset:
         dataloaders = get_small_dataset_dataloader(dataloaders, dataset_order, args.batch_size)
-    plot_label_distribution(dataloaders, folder_dir, args.smaller_dataset)
+    plot_label_distribution(dataloaders, folder_dir, args.smaller_dataset, label_decoder_dict)
     print('Data prepared\nLoading model...')
     num_class = len(label_decoder_dict) if args.number_of_classes is None else args.number_of_classes
     model = ConvLstm(args.latent_dim, args.hidden_size, args.lstm_layers, args.bidirectional, num_class)
@@ -90,7 +90,7 @@ def main():
             end_epoch = time.time()
             # ====== print the status to the console and write it in tensorboard =======
             print('Epoch {} : Train loss {:.8f}, Train acc {:.3f}, Val loss {:.8f}, Val acc {:.3f}, epoch time {:.4f}'
-                  .format(epoch,train_loss, train_acc, val_loss, val_acc, end_epoch - start_epoch))
+                  .format(epoch, train_loss, train_acc, val_loss, val_acc, end_epoch - start_epoch))
             tensorboard_writer.add_scalars('train/val loss', {'train_loss': train_loss,
                                                               'val loss': val_loss}, epoch)
             tensorboard_writer.add_scalars('train/val accuracy', {'train_accuracy': train_acc,

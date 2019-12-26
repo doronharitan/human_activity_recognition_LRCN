@@ -14,7 +14,7 @@ from random import sample
 import numpy as np
 import matplotlib.animation as manimation
 import matplotlib.patheffects as pe
-
+from collections import Counter
 
 def set_project_folder_dir(if_open_new_folder, local_dir, use_model_folder_dir=False, mode=None):
     if use_model_folder_dir:
@@ -47,24 +47,35 @@ def save_setting_info(args, device, folder_dir):
         f.write(str(device))
 
 
-def plot_label_distribution(dataloaders, folder_dir, small_data_set_mode, mode='train'):
+def plot_label_distribution(dataloaders, folder_dir, small_data_set_mode, label_decoder_dict, mode='train'):
     if mode == 'train':
-        for dataloader_name in dataloaders.keys():
-            plot_distribution(dataloaders[dataloader_name].dataset, dataloader_name, small_data_set_mode, folder_dir)
+        datasets = [dataloaders[dataloader_name].dataset for dataloader_name in dataloaders.keys()]
+        plot_distribution(datasets, list(dataloaders.keys()), small_data_set_mode, folder_dir, label_decoder_dict)
     else:
-        plot_distribution(dataloaders.dataset, 'test', small_data_set_mode, folder_dir)
+        plot_distribution([dataloaders.dataset], ['test'], small_data_set_mode, folder_dir, label_decoder_dict)
 
 
-def plot_distribution(dataset, dataset_name, small_data_set_mode, folder_dir):
-    if small_data_set_mode:
-        plt.hist(dataset.tensors[1], rwidth=0.9)
-    else:
-        plt.hist(dataset.labels, rwidth=0.9)
-    plt.title('Histogram showing the frequency of each label\n' + dataset_name)
+def plot_distribution(datasets_list, dataset_names_list, small_data_set_mode, folder_dir, label_decoder_dict):
+    plt.figure(figsize=(10, 6))
+    for dataset in datasets_list:
+        if small_data_set_mode:
+            counter_occurrence_of_each_class = Counter(dataset.tensors[1])
+        else:
+            counter_occurrence_of_each_class = Counter(dataset.labels)
+        sorted_counter = sorted(counter_occurrence_of_each_class.items())
+        x, y = zip(*sorted_counter)
+        plt.bar(x, y)
+    plt.legend(dataset_names_list)
+    plt.title('The frequency of each class\n' + '&'.join(dataset_names_list))
     plt.xlabel('label')
     plt.ylabel('Frequency')
-    plt.savefig(os.path.join(folder_dir, dataset_name + '.jpg'))
-    plt.clf()
+    x_ticks_labels = [label_decoder_dict[label_code] for label_code in x]
+    plt.xticks(x, x_ticks_labels, fontsize=8, rotation=90)
+    plt.yticks(fontsize=8)
+    plt.tight_layout()
+    plt.xlim(-1, max(x) + 1)
+    plt.savefig(os.path.join(folder_dir, '_'.join(dataset_names_list) + '.jpg'), dpi=300, bbox_inches="tight")
+    plt.close()
 
 
 def split_data(ucf_list_root, seed, number_of_classes, split_size, folder_dir):
@@ -118,12 +129,12 @@ def save_video_names_test_and_add_labels(video_names_test, labels_decoder_dict, 
             for text_video_name in video_names_test:
                 label_string = text_video_name.split('/')[0]
                 # endoce label
-                for key,value in labels_decoder_dict.items():
+                for key, value in labels_decoder_dict.items():
                     if value == label_string:
                         label_code = key
                     else:
                         continue
-                if number_of_classes is None or label_code in range(1, number_of_classes + 1):
+                if number_of_classes is None or label_code in range(0, number_of_classes):
                     f.write(text_video_name + ' ' + str(label_code) + '\n')
                 else:
                     continue
