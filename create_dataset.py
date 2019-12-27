@@ -6,7 +6,8 @@ import os
 import torchvision.transforms as transforms
 import skvideo
 import skvideo.io
-
+from torch.utils.data.sampler import Sampler
+from random import sample
 
 class UCF101Dataset(Dataset):
     def __init__(self, data_path,  num_frames_video, data, mode):
@@ -42,8 +43,28 @@ class UCF101Dataset(Dataset):
 
 
 
+class UCF101DatasetSampler(Sampler):
+    def __init__(self, data, batch_size):
+        self.num_samples = len(data)
+        self.classes_that_were_sampled = []
+        self.data_labels = data.labels
+        self.batch_size = batch_size
 
 
+    def __iter__(self):
+        idx_list = []
+        for i in range(self.batch_size):
+            idx_image_sample = sample(range(self.num_samples), 1)[0]
+            label_sample = self.data_labels[idx_image_sample]
+            while label_sample in self.classes_that_were_sampled:
+                idx_image_sample = sample(range(self.num_samples), 1)[0]
+                label_sample = self.data_labels[idx_image_sample]
+            self.classes_that_were_sampled += [label_sample]
+            idx_list += [idx_image_sample]
+        return iter(idx_list)
+
+    def __len__(self):
+        return self.num_samples
 
 
 

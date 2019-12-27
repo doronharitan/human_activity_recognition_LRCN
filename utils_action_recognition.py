@@ -16,6 +16,8 @@ import matplotlib.animation as manimation
 import matplotlib.patheffects as pe
 from collections import Counter
 from sklearn.metrics import confusion_matrix
+import sys
+
 
 def set_project_folder_dir(if_open_new_folder, local_dir, use_model_folder_dir=False, mode=None):
     if use_model_folder_dir:
@@ -266,37 +268,37 @@ def test_model(model, dataloader, device, criterion, mode='test'):
     return val_loss, val_acc, predicted_labels, local_images.cpu()
 
 
-def test_model_continues_movie(model, dataloader, device, criterion, path_save_movies, label_decoder_dict, checkpoint_interval, num_frames_to_sample=5):
+def test_model_continues_movie(model, dataloader, device, criterion, save_path, label_decoder_dict):
     val_loss, val_acc = 0.0, 0.0
     model.eval()
-    labels_for_plot_analysis, predicted_labels_for_plot_analysis = [], []
-    transform = set_transforms()
-    with tqdm(total=len(dataloader)) as pbar:
-        # with tqdm_notebook(total=len(dataloader)) as pbar:
-        for index, (local_images, local_labels) in enumerate(dataloader):
-            predicted_labels_list = []
-            # ===== create continues movie and labels tensor, with X frames from each movie ======
-            # ===== and stack a sliding window of size 5 frames to new dim so they will act as batch ======
-            sliding_window_images, continues_labels, continues_movie = create_sliding_window_x_frames_size_dataset\
-                (local_images, local_labels, num_frames_to_sample, transform)
-            # ====== predict the label of each sliding window, use batches beacuse of GPU memory ======
-            for batch_boundaries in range(0, len(sliding_window_images), dataloader.batch_size):
-                batch_images_to_plot = sliding_window_images[batch_boundaries: batch_boundaries + dataloader.batch_size].to(device)
-                batch_labels = continues_labels[batch_boundaries: batch_boundaries + dataloader.batch_size].to(device)
-                loss, acc, predicted_labels = foward_step(model, batch_images_to_plot, batch_labels, criterion, mode='test')
-                predicted_labels_list += [predicted_labels.detach().cpu()]
-            predicted_labels = torch.cat(predicted_labels_list, axis=0)
-            labels_for_plot_analysis += [continues_labels.detach().cpu()]
-            predicted_labels_for_plot_analysis += [predicted_labels]
-            val_loss += loss.item()
-            val_acc += acc
-            if index % checkpoint_interval == 0:
-                create_video_with_labels(path_save_movies, 'prediction_{}_batch.avi'.format(index), continues_movie, continues_labels, predicted_labels, label_decoder_dict)
-            pbar.update(1)
-    analysis_of_predicted_labels_in_sliding_window(predicted_labels_for_plot_analysis, labels_for_plot_analysis, num_frames_to_sample, path_save_movies)
+    # ====== choosing one random batch from the dataloader ======
+    dataloader_iter = iter(dataloader)
+    images, labels = next(dataloader_iter)
+    # ===== create continues movie and labels tensor, with X frames from each movie ======
+    # ===== and stack a sliding window of size 5 frames to new dim so they will act as batch ======
+    predicted_labels_list = []
+    num_frames_to_sample = images.shape[1]
+    #todo check the sliding window
+    sliding_window_images, continues_labels, continues_movie = create_sliding_window_x_frames_size_dataset\
+        (images, labels, num_frames_to_sample)
+    # ====== predict the label of each sliding window, use batches beacuse of GPU memory ======
+    for batch_boundaries in range(0, len(sliding_window_images), dataloader.batch_size):
+        batch_images_to_plot = sliding_window_images[batch_boundaries: batch_boundaries + dataloader.batch_size].to(device)
+        batch_labels = continues_labels[batch_boundaries: batch_boundaries + dataloader.batch_size].to(device)
+        loss, acc, predicted_labels = foward_step(model, batch_images_to_plot, batch_labels, criterion, mode='test')
+        predicted_labels_list += [predicted_labels.detach().cpu()]
+    predicted_labels = torch.cat(predicted_labels_list, axis=0)
+    val_loss += loss.item()
+    val_acc += acc
+    #todo check how it works
+    create_video_with_labels(save_path, 'Video_with_prediction_vs_true_labels.avi', continues_movie, continues_labels, predicted_labels,
+                             label_decoder_dict)
+    # todo check how it works
+    #todo change function to the correct ones
+    analysis_of_predicted_labels_in_sliding_window(predicted_labels, continues_labels, num_frames_to_sample, save_path)
     val_acc = 100 * (val_acc / dataloader.dataset.__len__())
     val_loss = val_loss / len(dataloader)
-    return val_loss, val_acc, predicted_labels, local_images.cpu()
+    return val_loss, val_acc, predicted_labels, images.cpu()
 
 
 def create_sliding_window_x_frames_size_dataset(local_images, local_labels, num_frames_to_sample, transform):
@@ -305,6 +307,7 @@ def create_sliding_window_x_frames_size_dataset(local_images, local_labels, num_
     continues_frames = local_images.view(local_images.shape[0] * local_images.shape[1], local_images.shape[2],
                                          local_images.shape[3], local_images.shape[4])
     # ==== create continues label tensor where each frame has its own label ======
+    #todo change the way we alocate each label
     continues_labels = local_labels.view(-1, 1).repeat(1, num_frames_to_sample).view(-1)
     continues_labels = continues_labels[:len(continues_labels) - num_frames_to_sample + 1] # remove the last frames where the sliding window couldn't pass
     sliding_window_images = []
@@ -370,7 +373,10 @@ def create_new_video(save_path, video_name, image_array):
     output_video.release()
     cv2.destroyAllWindows()
 
+
 def create_video_with_labels(save_path, video_name, image_array, continues_labels, predicted_labels, label_decoder_dict):
+    path_save_videos = os.path.join(save_path, 'Videos')
+    create_folder_dir_if_needed(path_save_videos)
     image_array = image_array.transpose(2, 1).transpose(2, 3).numpy()
     n_frames = len(image_array)
     h_fig = plt.figure(figsize=(4, 4))
@@ -390,7 +396,7 @@ def create_video_with_labels(save_path, video_name, image_array, continues_label
     FFMpegWriter = manimation.writers['ffmpeg']
     metadata = dict(title=video_name, artist='Matplotlib')
     writer = FFMpegWriter(fps=3, metadata=metadata)
-    with writer.saving(h_fig, os.path.join(save_path, video_name), dpi=150):  # change from 600 dpi
+    with writer.saving(h_fig, os.path.join(path_save_videos, video_name), dpi=150):  # change from 600 dpi
         for i in range(n_frames):
             if continues_labels is not None:
                 h_text_1.set_text('Original label - {}'.format(label_decoder_dict[continues_labels[i].item()]))
@@ -420,8 +426,8 @@ def setting_sample_rate(num_frames_to_extract, sampling_rate, video, fps):
     return sample_start_point, sampling_rate
 
 def load_test_data(model_dir):
-    globel_dir = os.path.normpath(model_dir + os.sep + os.pardir)
-    with open(os.path.join(globel_dir, 'test_videos_detailes.txt')) as f:
+    global_dir = os.path.normpath(model_dir + os.sep + os.pardir)
+    with open(os.path.join(global_dir, 'test_videos_detailes_1.txt')) as f:
         video_list = f.readlines()
     test_videos_names, labels = [], []
     for video_name_with_label in video_list:
@@ -429,7 +435,7 @@ def load_test_data(model_dir):
         test_videos_names += [video_name]
         labels += [int(label.rstrip('\n'))]
     # open labels_decoder_dict
-    with open(os.path.join(globel_dir,'labels_decoder_dict.pkl'), 'rb') as f:
+    with open(os.path.join(global_dir,'labels_decoder_dict.pkl'), 'rb') as f:
         labels_decoder_dict = pickle.load(f)
     return test_videos_names, labels, labels_decoder_dict
 
@@ -449,6 +455,7 @@ def plot_confusion_matrix(predicted_labels, true_labels, label_decoder_dict, sav
     plt.tight_layout()
     plt.savefig(os.path.join(save_path, 'Normalized_confusion_matrix.png'), dpi=300, bbox_inches='tight')
     plt.close()
+
 
 def plot_acc_per_class(predicted_labels, true_labels, label_decoder_dict, save_path):
     # ===== count the number of times each class appear in the test data =====
@@ -483,4 +490,13 @@ def plot_acc_per_class(predicted_labels, true_labels, label_decoder_dict, save_p
     plt.savefig(os.path.join(save_path,'The_accuracy_score_for_each_class.png'), dpi=300, bbox_inches='tight')
     plt.close()
 
-
+def check_if_batch_size_bigger_than_num_classes(batch_size, num_of_classes):
+    if num_of_classes is None:
+        num_of_classes = 101
+    if batch_size > num_of_classes:
+        print('Your batch size is bigger than the num of classes you are testing. This would cause an Error in the custom sampler. Your options are:\n'
+              '1. Reduce the batch size so it would be smaller or equal to the number of classes you are testing.\n'
+              '2. Reduce the number of classes so it would be bigger or equal to the batch size.\n'
+              '3. Stop using the custom sampler: erase the sampler parameter from the dataloader and change the shuffle '
+              'parameter to True.')
+        sys.stop()
