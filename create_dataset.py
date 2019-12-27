@@ -56,7 +56,7 @@ class UCF101DatasetSampler(Sampler):
         for i in range(self.batch_size):
             idx_image_sample = sample(range(self.num_samples), 1)[0]
             label_sample = self.data_labels[idx_image_sample]
-            while label_sample in self.classes_that_were_sampled:
+            while label_sample in self.classes_that_were_sampled: #and label_sample!= 54 : #todo change 54 condition
                 idx_image_sample = sample(range(self.num_samples), 1)[0]
                 label_sample = self.data_labels[idx_image_sample]
             self.classes_that_were_sampled += [label_sample]

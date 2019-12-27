@@ -42,22 +42,22 @@ def main():
     model.load_state_dict(checkpoint['model_state_dict'])
 
     # ====== inferance_mode ======
-    # test_loss, test_acc, predicted_labels, images, true_labels = test_model(model, dataloader, device, criterion, mode='save_prediction_label_list')
-    # print('test loss {:.8f}, test_acc {:.3f}'.format(test_loss, test_acc))
-    # save_loss_info_into_a_file(0, test_loss, 0, test_acc, folder_dir, 'test')
+    test_loss, test_acc, predicted_labels, images, true_labels = test_model(model, dataloader, device, criterion, mode='save_prediction_label_list')
+    print('test loss {:.8f}, test_acc {:.3f}'.format(test_loss, test_acc))
+    save_loss_info_into_a_file(0, test_loss, 0, test_acc, folder_dir, 'test')
     # ====== analyze the test results ======
-    # plot_images_with_predicted_labels(images, label_decoder_dict, predicted_labels[-1], folder_dir, 'test')
+    plot_images_with_predicted_labels(images, label_decoder_dict, predicted_labels[-1], folder_dir, 'test')
     save_path_plots = os.path.join(folder_dir, 'Plots')
     create_folder_dir_if_needed(save_path_plots)
-    # for i in range(len(images)):
-    #     create_video_with_labels(folder_dir, '{}_{}.avi'.format(label_decoder_dict[predicted_labels[-1][i].item()], i),
-    #                              images[i], None, [predicted_labels[-1][i]], label_decoder_dict)
-    import numpy as np
-    with np.load(r'C:\Users\Doron\Desktop\ObjectRecognition\20191218-214903\test\predicted_labels.npz') as f:
-        predicted_labels = torch.tensor(f['arr_0'])
-    with np.load(r'C:\Users\Doron\Desktop\ObjectRecognition\20191218-214903\test\true_labels.npz') as f:
-            true_labels = torch.tensor(f['arr_0'])
-    # predicted_labels, true_labels = torch.cat(predicted_labels), torch.cat(true_labels)
+    for i in range(len(images)):
+        create_video_with_labels(folder_dir, '{}_{}.avi'.format(label_decoder_dict[predicted_labels[-1][i].item()], i),
+                                 images[i], None, [predicted_labels[-1][i]], label_decoder_dict)
+    # import numpy as np
+    # with np.load(r'C:\Users\Doron\Desktop\ObjectRecognition\20191218-214903\test\predicted_labels.npz') as f:
+    #     predicted_labels = torch.tensor(f['arr_0'])
+    # with np.load(r'C:\Users\Doron\Desktop\ObjectRecognition\20191218-214903\test\true_labels.npz') as f:
+    #         true_labels = torch.tensor(f['arr_0'])
+    predicted_labels, true_labels = torch.cat(predicted_labels), torch.cat(true_labels)
     plot_confusion_matrix(predicted_labels, true_labels, label_decoder_dict, save_path_plots)
     plot_acc_per_class(predicted_labels, true_labels, label_decoder_dict, save_path_plots)
 

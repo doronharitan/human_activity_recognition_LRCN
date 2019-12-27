@@ -291,16 +291,16 @@ def test_model_continues_movie(model, dataloader, device, criterion, save_path, 
         batch_labels = continues_labels[batch_boundaries: batch_boundaries + dataloader.batch_size].to(device)
         loss, acc, predicted_labels = foward_step(model, batch_images_to_plot, batch_labels, criterion, mode='test')
         predicted_labels_list += [predicted_labels.detach().cpu()]
+        val_acc += acc
     predicted_labels = torch.cat(predicted_labels_list, axis=0)
     val_loss += loss.item()
-    val_acc += acc
     create_video_with_labels(save_path, 'Video_with_prediction_vs_true_labels.avi', continues_movie, continues_labels, predicted_labels,
                              label_decoder_dict)
     save_path_plots = os.path.join(save_path, 'Plots')
     create_folder_dir_if_needed(save_path_plots)
     plot_sliding_window_prediction_for_each_frame(continues_labels, predicted_labels, save_path_plots, label_decoder_dict, labels)
     plot_function_of_num_frames_in_window_on_prediction(continues_labels, predicted_labels, save_path_plots, num_frames_to_sample)
-    val_acc = 100 * (val_acc / dataloader.dataset.__len__())
+    val_acc = 100 * (val_acc / len(sliding_window_images))
     val_loss = val_loss / len(dataloader)
     return val_loss, val_acc, predicted_labels, images.cpu()
 
@@ -331,22 +331,23 @@ def create_sliding_window_x_frames_size_dataset(local_images, local_labels, num_
         # ===== normalize the frames according to the imagenet preprocessing =======
         sliding_window_images += [continues_frames[num_frame: num_frame + num_frames_to_sample]]
     sliding_window_images = torch.stack(sliding_window_images)
+    continues_frames = continues_frames[:len(sliding_window_images)]
     return sliding_window_images, continues_labels, continues_frames
 
 
 def plot_function_of_num_frames_in_window_on_prediction(continues_labels, predicted_labels, save_path_plots,  num_frames_to_sample):
-    acc_sum = 0
+    mean_acc_array = []
     for num_frames in range(num_frames_to_sample):
         predicted_labels_with_num_frames_in_window = np.array([predicted_labels[i] for i in range(num_frames, len(predicted_labels), num_frames_to_sample)])
         labels_with_num_frames = np.array([continues_labels[i] for i in range(num_frames, len(continues_labels), num_frames_to_sample)])
-        acc_sum += (predicted_labels_with_num_frames_in_window == labels_with_num_frames).sum()
-    mean_acc_array = acc_sum / len(continues_labels) * 100
+        mean_acc_array += [(predicted_labels_with_num_frames_in_window == labels_with_num_frames).sum() / len(labels_with_num_frames) * 100]
     mean_acc_array.reverse()
     x_axis = np.arange(num_frames_to_sample)
     plt.plot(x_axis, mean_acc_array, linestyle='-', marker="o")
     plt.xticks(x_axis, np.arange(num_frames_to_sample, 0, -1))
     plt.xlabel('Number of frames from a specific human action')
     plt.ylabel('Mean accuracy [%]')
+    plt.ylim(0,100)
     plt.title('Change in accuracy with the change in frame num')
     plt.savefig(os.path.join(save_path_plots, 'analysis_of_predicted_labels_in_sliding_window.png'), dpi=300,
                 bbox_inches='tight')
@@ -445,7 +446,7 @@ def setting_sample_rate(num_frames_to_extract, sampling_rate, video, fps):
 
 def load_test_data(model_dir):
     global_dir = os.path.normpath(model_dir + os.sep + os.pardir)
-    with open(os.path.join(global_dir, 'test_videos_detailes_1.txt')) as f:
+    with open(os.path.join(global_dir, 'test_videos_detailes.txt')) as f:
         video_list = f.readlines()
     test_videos_names, labels = [], []
     for video_name_with_label in video_list:
@@ -525,23 +526,25 @@ def check_if_batch_size_bigger_than_num_classes(batch_size, num_of_classes):
 
 
 def plot_sliding_window_prediction_for_each_frame(continues_labels, predicted_labels, save_path_plots, label_decoder_dict, original_order_of_labels):
-    predicted_labels_one_hot = create_one_hot_vector_matrix(predicted_labels.numpy())
-    labels_one_hot = create_one_hot_vector_matrix(continues_labels.numpy())
+    max_label_code = max(max(predicted_labels).item(), max(continues_labels).item())
+    predicted_labels_one_hot = create_one_hot_vector_matrix(predicted_labels.numpy(), max_label_code)
+    labels_one_hot = create_one_hot_vector_matrix(continues_labels.numpy(), max_label_code)
     labels_one_hot = labels_one_hot * 2
     one_hot_matrix_to_plot = predicted_labels_one_hot + labels_one_hot
-    one_hot_matrix_to_plot = one_hot_matrix_to_plot[~np.all(one_hot_matrix_to_plot == 0, axis=1)]
     one_hot_matrix_to_plot = resort_matrix(original_order_of_labels, one_hot_matrix_to_plot)
+    one_hot_matrix_to_plot = one_hot_matrix_to_plot[~np.all(one_hot_matrix_to_plot == 0, axis=1)]
     one_hot_matrix_to_plot = np.apply_along_axis(increase_the_error_value_for_non_neighbors_labels, 0, one_hot_matrix_to_plot)
-    plt.figure(figsize=(10, 12))
+    plt.figure(figsize=(12, 10))
     im = plt.imshow(one_hot_matrix_to_plot, cmap='bwr', aspect='auto')
-    skip_x_ticks = math.ceil(len(continues_labels)/14)
-    x_array = np.arange(0, len(continues_labels, skip_x_ticks))
-    y_labels = [label_decoder_dict[label_code] for label_code in original_order_of_labels.item()]
+    skip_x_ticks = math.ceil(len(continues_labels)/15)
+    x_array = np.arange(0, len(continues_labels), skip_x_ticks)
+    y_labels = [label_decoder_dict[label_code.item()] for label_code in original_order_of_labels]
+    plt.ylim(len(y_labels), -0.3)
     plt.xticks(x_array, x_array, fontsize=10)
     plt.yticks(np.arange(len(original_order_of_labels)), y_labels, fontsize=10)
     # ==== create coustomize legand to the heat map =====
-    values = ['None', 'Predicted_labels', 'True_labels', 'Errors']
-    colors = [im.cmap(im.norm(value)) for value in values]
+    values = ['None', 'Predicted_labels', 'Predicted_labels_next_movie', 'predicted_label_is_true_label', 'Errors']
+    colors = [im.cmap(im.norm(value)) for value in range(len(values))]
     patches = [mpatches.Patch(color=colors[i], label=values[i], edgecolor='b') for i in
                range(len(values))]
     plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.5, frameon=True)
@@ -550,24 +553,30 @@ def plot_sliding_window_prediction_for_each_frame(continues_labels, predicted_la
                 bbox_inches='tight')
     plt.close()
 
-def create_one_hot_vector_matrix(array):
-    one_hot_array = np.zeros((array.size, array.max() + 1))
+
+def create_one_hot_vector_matrix(array, array_max):
+    one_hot_array = np.zeros((array.size, array_max + 1))
     one_hot_array[np.arange(array.size), array] = 1
-    one_hot_array.transpose()
+    one_hot_array = one_hot_array.transpose()
     return one_hot_array
 
 
 def resort_matrix(labels_order, matrix):
     sorted_matrix = np.zeros(matrix.shape)
-    for row_index,label in enumerate(labels_order):
-        sorted_matrix[row_index] = matrix[label.item()]
+    classes_that_we_ploted = []
+    for row_index, label in enumerate(labels_order):
+        if label.item() in classes_that_we_ploted:
+            pass
+        else:
+            sorted_matrix[row_index] = matrix[label.item()]
+            classes_that_we_ploted += [label.item()]
     return sorted_matrix
 
 
 def increase_the_error_value_for_non_neighbors_labels(matrix_col):
     indices_of_non_zero_elements = np.nonzero(matrix_col)
-    if indices_of_non_zero_elements > 1:
-        dist_between_indices = indices_of_non_zero_elements[1] - indices_of_non_zero_elements[0]
+    if len(indices_of_non_zero_elements[0]) > 1:
+        dist_between_indices = indices_of_non_zero_elements[0][1] - indices_of_non_zero_elements[0][0]
         if dist_between_indices > 1:
             matrix_col[matrix_col==1] = 5
     return matrix_col
