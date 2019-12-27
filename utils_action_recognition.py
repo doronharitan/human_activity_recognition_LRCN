@@ -469,6 +469,7 @@ def plot_confusion_matrix(predicted_labels, true_labels, label_decoder_dict, sav
     x_labels = [label_decoder_dict[label_code] for label_code in class_order_to_plot]
     plt.xticks(class_order_to_plot, x_labels, rotation=90, fontsize=6)
     plt.yticks(class_order_to_plot, x_labels, fontsize=6)
+    plt.ylim(len(class_order_to_plot), -0.5)
     plt.title('Normalized confusion matrix')
     plt.tight_layout()
     plt.savefig(os.path.join(save_path, 'Normalized_confusion_matrix.png'), dpi=300, bbox_inches='tight')
@@ -477,7 +478,7 @@ def plot_confusion_matrix(predicted_labels, true_labels, label_decoder_dict, sav
 
 def plot_acc_per_class(predicted_labels, true_labels, label_decoder_dict, save_path):
     # ===== count the number of times each class appear in the test data =====
-    frequency_of_each_class = Counter(true_labels)
+    frequency_of_each_class = Counter(true_labels.tolist())
     # ===== count the number of times each class is labeled correctly =======
     class_list = list(label_decoder_dict.keys())[: true_labels.max()+1]
     acc = true_labels == predicted_labels
@@ -493,20 +494,66 @@ def plot_acc_per_class(predicted_labels, true_labels, label_decoder_dict, save_p
         if frequency_of_each_class[class_] <= (0.9 * mean_frequency):
             classes_with_lower_frequency_compare_to_average += [class_]
     acc_classes_with_lower_frequency_compare_to_average = [acc_per_class[class_] for class_ in classes_with_lower_frequency_compare_to_average]
-    plt.figure(figsize=(10,10))
+    plot_acc_no_stack(class_list, acc_per_class, classes_with_lower_frequency_compare_to_average,
+                      acc_classes_with_lower_frequency_compare_to_average, label_decoder_dict, save_path)
+    #todo remove and return the plot below to here
+    # plot_acc_with_stack(class_list, true_labels, predicted_labels, acc, frequency_of_each_class, acc_per_class, label_decoder_dict, save_path)
+
+
+def plot_acc_no_stack(class_list, acc_per_class, classes_with_lower_frequency_compare_to_average,
+                      acc_classes_with_lower_frequency_compare_to_average, label_decoder_dict, save_path):
+    plt.figure(figsize=(10, 10))
     plt.bar(class_list, acc_per_class)
     plt.bar(classes_with_lower_frequency_compare_to_average, acc_classes_with_lower_frequency_compare_to_average, color='red')
     x_labels = [label_decoder_dict[label_code] for label_code in class_list]
     plt.xticks(class_list, x_labels, rotation=90, fontsize=12)
     plt.yticks(fontsize=12)
-    plt.xlabel('Classes')
-    plt.ylabel('Accuracy [%]')
+    plt.xlabel('Classes', fontsize=16)
+    plt.ylabel('Accuracy [%]',  fontsize=16)
     plt.xlim(-1, class_list[-1] + 1)
-    plt.legend(['freq > 0.9 * clavr freq of a ass', 'freq <= 0.9 * avr freq of a class'])
-    plt.title('The accuracy score for each class')
+    plt.ylim(0,109)
+    plt.legend(['freq > 0.9 * avr freq of a class', 'freq <= 0.9 * avr freq of a class'])
+    plt.title('The accuracy score for each class',  fontsize=18)
     plt.tight_layout()
     plt.savefig(os.path.join(save_path,'The_accuracy_score_for_each_class.png'), dpi=300, bbox_inches='tight')
     plt.close()
+
+
+# def plot_acc_with_stack(class_list, true_labels, predicted_labels, acc, frequency_of_each_class, acc_per_class, label_decoder_dict, save_path):
+#     counters = {}
+#     for i in class_list:
+#         counters[i] = Counter()
+#     for index, label in enumerate(true_labels):
+#         if acc[index].item() == False:
+#             if predicted_labels[index].item() == 54:
+#                 pass
+#             else:
+#                 counters[predicted_labels[index].item()][label.item()] += 1
+#     numpy_array = np.zeros((len(class_list), len(class_list)))
+#     for i in range(len(class_list)):
+#         for index in counters[i].keys():
+#             numpy_array[i][index] = counters[i][index] / frequency_of_each_class[index] * 100
+#     arrays_we_have_plots = np.array(acc_per_class)
+#     plt.bar(class_list, acc_per_class)
+#     colors = [np.random.rand(3,) for i in range(len(class_list))]
+#     for i in range(len(class_list)):
+#         p_bar = plt.bar(class_list, numpy_array[i], bottom=arrays_we_have_plots, color=colors[i])
+#         arrays_we_have_plots += np.array(numpy_array[i])
+#     x_labels = [label_decoder_dict[label_code] for label_code in class_list]
+#     patches = [mpatches.Patch(color=colors[i], label=x_labels[i], edgecolor='b') for i in
+#                range(len(x_labels))]
+#     plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.5, frameon=True)
+#     plt.xticks(class_list, x_labels, rotation=90, fontsize=8)
+#     plt.yticks(fontsize=12)
+#     plt.xlabel('Classes', fontsize=16)
+#     plt.ylabel('Accuracy [%]', fontsize=16)
+#     plt.xlim(-1, class_list[-1] + 1)
+#     plt.ylim(0, 109)
+#     plt.title('The accuracy score for each class', fontsize=18)
+#     plt.tight_layout()
+#     plt.savefig(os.path.join(save_path, 'The_accuracy_score_for_each_class_with_stack.png'), dpi=300, bbox_inches='tight')
+#     plt.close()
+
 
 
 def check_if_batch_size_bigger_than_num_classes(batch_size, num_of_classes):
