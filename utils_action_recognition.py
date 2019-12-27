@@ -278,7 +278,6 @@ def test_model_continues_movie(model, dataloader, device, criterion, save_path, 
     # ===== and stack a sliding window of size 5 frames to new dim so they will act as batch ======
     predicted_labels_list = []
     num_frames_to_sample = images.shape[1]
-    #todo check the sliding window
     sliding_window_images, continues_labels, continues_movie = create_sliding_window_x_frames_size_dataset\
         (images, labels, num_frames_to_sample)
     # ====== predict the label of each sliding window, use batches beacuse of GPU memory ======
@@ -301,20 +300,31 @@ def test_model_continues_movie(model, dataloader, device, criterion, save_path, 
     return val_loss, val_acc, predicted_labels, images.cpu()
 
 
-def create_sliding_window_x_frames_size_dataset(local_images, local_labels, num_frames_to_sample, transform):
+def create_sliding_window_x_frames_size_dataset(local_images, local_labels, num_frames_to_sample):
+    """"
+    This function would join all of the images in the batch to one long continues movie, which would be
+    composed from num_batch human action movies (shape - num_batch*num_frames_to_sample, 3, 224, 224).
+    Than, a sliding window of num_frames_to_sample would be passed on the continues movie,
+    creating a stack of mini videos that can be used as an input to the LRCN network.
+    (shape - (num_batch - num_frames_to_sample+1), num_of_frames_to_samples, 3, 224, 224)
+    The label for each sliding window would be set according the majority of frames we have for each action,
+    meaning if the sliding window has 3 frames from the first action and two from the last the label of the sliding
+    window would be the first action
+    """
     # ===== create continues movie, with X frames from each movie ======
     local_images = local_images[:, :num_frames_to_sample]
     continues_frames = local_images.view(local_images.shape[0] * local_images.shape[1], local_images.shape[2],
                                          local_images.shape[3], local_images.shape[4])
     # ==== create continues label tensor where each frame has its own label ======
-    #todo change the way we alocate each label
-    continues_labels = local_labels.view(-1, 1).repeat(1, num_frames_to_sample).view(-1)
-    continues_labels = continues_labels[:len(continues_labels) - num_frames_to_sample + 1] # remove the last frames where the sliding window couldn't pass
+    majority_of_num_of_frames = math.ceil(num_frames_to_sample/2) if num_frames_to_sample % 2 !=0 else num_frames_to_sample/2 + 1
+    mid_continues_labels = local_labels[1:len(local_labels)-1].view(-1, 1).repeat(1, num_frames_to_sample).view(-1)
+    start_continues_labels = local_labels[0].view(-1,1).repeat(1, majority_of_num_of_frames).view(-1)
+    end_continues_labeels =  local_labels[-1].view(-1,1).repeat(1, majority_of_num_of_frames).view(-1)
+    continues_labels = torch.cat((start_continues_labels, mid_continues_labels, end_continues_labeels))
     sliding_window_images = []
-    for num_frame in range(continues_frames.shape[0] - 5):  # todo see if I can change the sliding window size
+    for num_frame in range(continues_frames.shape[0] - num_frames_to_sample + 1):
         # ===== normalize the frames according to the imagenet preprocessing =======
-        sliding_window_images += [torch.stack([transform(image) for image in continues_frames[num_frame: num_frame + 5]])]
-    sliding_window_images += [torch.stack([transform(image) for image in continues_frames[continues_frames.shape[0] - 5: continues_frames.shape[0]]])]
+        sliding_window_images += [continues_frames[num_frame: num_frame + num_frames_to_sample]]
     sliding_window_images = torch.stack(sliding_window_images)
     return sliding_window_images, continues_labels, continues_frames
 
