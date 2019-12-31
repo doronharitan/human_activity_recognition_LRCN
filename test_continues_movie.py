@@ -25,7 +25,7 @@ def main():
     print('The project directory is {}' .format(folder_dir))
     save_setting_info(args, device, folder_dir)
     test_videos_names, labels, label_decoder_dict = load_test_data(args.model_dir)
-    dataset = UCF101Dataset(args.sampled_data_dir, args.num_frames_video, [test_videos_names, labels], mode='test')
+    dataset = UCF101Dataset(args.sampled_data_dir, [test_videos_names, labels], mode='test')
     sampler = UCF101DatasetSampler(dataset, args.batch_size)
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, sampler=sampler)
     plot_label_distribution(dataloader, folder_dir, args.smaller_dataset, label_decoder_dict, mode='test')

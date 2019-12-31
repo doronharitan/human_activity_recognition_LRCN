@@ -9,12 +9,11 @@ from create_dataset import UCF101Dataset
 from torch.utils.data import DataLoader
 from lrcn_model import ConvLstm
 from train import parser
-from random import sample
 
 parser.add_argument('--model_dir', default=r'C:\Users\Doron\Desktop\ObjectRecognition\20191218-214903\Saved_model_checkpoints', type=str, help='The dir of the model we want to test')
 parser.add_argument('--model_name', default='epoch_30.pth.tar', type=str, help='the name for the model we want to test on')
 
-
+#todo need to check all test that they are running ok
 def main():
     # ====== set the run settings ======
     args = parser.parse_args()
@@ -25,7 +24,7 @@ def main():
     print('The project directory is {}' .format(folder_dir))
     save_setting_info(args, device, folder_dir)
     test_videos_names, labels, label_decoder_dict = load_test_data(args.model_dir)
-    dataset = UCF101Dataset(args.sampled_data_dir, args.num_frames_video, [test_videos_names, labels], mode='test')
+    dataset = UCF101Dataset(args.sampled_data_dir, [test_videos_names, labels], mode='test')
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 
     # ======= if args.smaller_dataset True load small portion of the dataset directly to the RAM (for faster computation) ======

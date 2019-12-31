@@ -7,7 +7,7 @@ class ConvLstm(nn.Module):
         self.conv_model = Pretrained_conv(latent_dim)
         self.Lstm = Lstm(latent_dim, hidden_size, lstm_layers, bidirectional)
         self.output_layer = nn.Sequential(
-            nn.Linear(2 * hidden_size if bidirectional == True else hidden_size, n_class), #todo explain why I have here softmax
+            nn.Linear(2 * hidden_size if bidirectional==True else hidden_size, n_class),
             nn.Softmax(dim=-1)
         )
 

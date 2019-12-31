@@ -8,14 +8,20 @@ import skvideo
 import skvideo.io
 from torch.utils.data.sampler import Sampler
 from random import sample
+from utils_action_recognition import print_dataset_type_error
 
 class UCF101Dataset(Dataset):
-    def __init__(self, data_path,  num_frames_video, data, mode):
+    def __init__(self, data_path, data, mode, dataset='UCF101'):
         super(UCF101Dataset, self).__init__()
-        self.data_path = os.path.join(data_path, mode if mode != 'val' else 'train')
-        self.num_frames_video = num_frames_video
+        self.dataset = dataset
+        if self.dataset == 'UCF101':
+            self.labels = data[1]
+            self.data_path = os.path.join(data_path, mode if mode != 'val' else 'train')
+        elif dataset == 'youtube':
+            self.data_path = data_path
+        else:
+            print_dataset_type_error()
         self.images = data[0]
-        self.labels = data[1]
         self.set_transforms()
 
     # ====== Override to give PyTorch size of dataset ======
@@ -23,8 +29,13 @@ class UCF101Dataset(Dataset):
         return len(self.images)
 
     def __getitem__(self, idx):
-        sampled_video_name = self.images[idx].split('/')[1] +'.avi'
-        # ====== extract numpy array from the video and sample it so we will have an arrry with lower FPS rate =======
+        if self.dataset == 'UCF101':
+            sampled_video_name = self.images[idx].split('/')[1] +'.avi'
+        elif self.dataset == 'youtube':
+            sampled_video_name = self.images[idx]
+        else:
+           print_dataset_type_error()
+        # ====== extract numpy array from the video and sample it so we will have an array with lower FPS rate =======
         video_frames = skvideo.io.vread(os.path.join(self.data_path, sampled_video_name))
         video_frames_array = []
         for image in video_frames:
@@ -32,15 +43,18 @@ class UCF101Dataset(Dataset):
             img = self.transform(img)
             video_frames_array.append(img)
         img_stack = torch.stack(video_frames_array)
-        label = torch.from_numpy(np.asarray(int(self.labels[idx]))).long()
-        return img_stack, label
+        if self.dataset == 'UCF101':
+            label = torch.from_numpy(np.asarray(int(self.labels[idx]))).long()
+            return img_stack, label
+        else:
+            return img_stack
+
 
     def set_transforms(self):
         # ===== the separated transform for train and test was done in the preprocessing data script =======
         self.transform = transforms.Compose([transforms.ToTensor(),
                                             transforms.Normalize(mean=(0.485, 0.456, 0.406),
                                                                  std=(0.229, 0.224, 0.225))])
-
 
 
 class UCF101DatasetSampler(Sampler):
@@ -56,7 +70,7 @@ class UCF101DatasetSampler(Sampler):
         for i in range(self.batch_size):
             idx_image_sample = sample(range(self.num_samples), 1)[0]
             label_sample = self.data_labels[idx_image_sample]
-            while label_sample in self.classes_that_were_sampled: #and label_sample!= 54 : #todo change 54 condition
+            while label_sample in self.classes_that_were_sampled:
                 idx_image_sample = sample(range(self.num_samples), 1)[0]
                 label_sample = self.data_labels[idx_image_sample]
             self.classes_that_were_sampled += [label_sample]

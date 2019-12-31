@@ -3,21 +3,23 @@ import os
 import pickle
 import cv2
 import matplotlib.pyplot as plt
-import torch
-from sklearn.model_selection import train_test_split
-import math
-from torch.utils.data import DataLoader, TensorDataset
-from tqdm import tqdm
-# from tqdm import tnrange, tqdm_notebook #used when I run in colab/GCloud
-import torchvision.transforms as transforms
-from random import sample
-import numpy as np
 import matplotlib.animation as manimation
 import matplotlib.patheffects as pe
 import matplotlib.patches as mpatches
-from collections import Counter
+import torch
+from torch.utils.data import DataLoader, TensorDataset
+import torch.nn.functional as F
+import torchvision.transforms as transforms
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
+import math
+from tqdm import tqdm
+# from tqdm import tnrange, tqdm_notebook #used when I run in colab/GCloud
+from random import sample
+import numpy as np
+from collections import Counter
 import sys
+from PIL import Image
 
 
 def set_project_folder_dir(if_open_new_folder, local_dir, use_model_folder_dir=False, mode=None):
@@ -51,19 +53,19 @@ def save_setting_info(args, device, folder_dir):
         f.write(str(device))
 
 
-def plot_label_distribution(dataloaders, folder_dir, small_data_set_mode, label_decoder_dict, mode='train'):
+def plot_label_distribution(dataloaders, folder_dir, load_all_data_to_RAM_mode, label_decoder_dict, mode='train'):
     if mode == 'train':
         datasets = [dataloaders[dataloader_name].dataset for dataloader_name in dataloaders.keys()]
-        plot_distribution(datasets, list(dataloaders.keys()), small_data_set_mode, folder_dir, label_decoder_dict)
+        plot_distribution(datasets, list(dataloaders.keys()), load_all_data_to_RAM_mode, folder_dir, label_decoder_dict)
     else:
-        plot_distribution([dataloaders.dataset], ['test'], small_data_set_mode, folder_dir, label_decoder_dict)
+        plot_distribution([dataloaders.dataset], ['test'], load_all_data_to_RAM_mode, folder_dir, label_decoder_dict)
 
 
-def plot_distribution(datasets_list, dataset_names_list, small_data_set_mode, folder_dir, label_decoder_dict):
+def plot_distribution(datasets_list, dataset_names_list, load_all_data_to_RAM_mode, folder_dir, label_decoder_dict):
     plt.figure(figsize=(10, 6))
     for dataset in datasets_list:
-        if small_data_set_mode:
-            counter_occurrence_of_each_class = Counter(dataset.tensors[1])
+        if load_all_data_to_RAM_mode:
+            counter_occurrence_of_each_class = Counter(dataset.tensors[1].tolist())
         else:
             counter_occurrence_of_each_class = Counter(dataset.labels)
         sorted_counter = sorted(counter_occurrence_of_each_class.items())
@@ -112,16 +114,17 @@ def get_video_list(ucf_list_root, number_of_classes):
     # ====== get a list of video names ======
     video_names_train, video_names_test, labels = [], [], []
     for file in os.listdir(ucf_list_root):
+        file_path = os.path.join(ucf_list_root,file)
         if 'train' in file:
-            with open(ucf_list_root + file) as f:
+            with open(file_path) as f:
                 video_names = f.readlines()
             video_names_train, labels = get_data('train', video_names, video_names_train, number_of_classes, labels)
         elif 'classInd' in file:
-            with open(ucf_list_root + file) as f:
+            with open(file_path) as f:
                 labels_decoder = f.readlines()
             labels_decoder_dict = {int(x.split(' ')[0]) -1 : x.split(' ')[1].rstrip('\n') for x in labels_decoder}
         else:
-            with open(ucf_list_root + file) as f:
+            with open(file_path) as f:
                 video_names = f.readlines()
             video_names_test, _ = get_data('test', video_names, video_names_test, number_of_classes)
     return video_names_train, video_names_test, labels, labels_decoder_dict
@@ -167,33 +170,29 @@ def plot_images_with_predicted_labels(local_x, label_decoder_dict, predicted_lab
 def create_folder_dir_if_needed(folder_save_dir, mode='single_folder'):
     if not os.path.exists(folder_save_dir):
         os.makedirs(folder_save_dir)
-        if mode == 'preprocessing_data':
+        if mode == 'preprocessing_data_UCF101' or mode == 'preprocessing_data_ucf101':
             os.makedirs(os.path.join(folder_save_dir, 'test'))
             os.makedirs(os.path.join(folder_save_dir, 'train'))
 
 
-def get_small_dataset_dataloader(dataloaders, dataset_order, batch_size):
+def load_all_dataset_to_RAM(dataloaders, dataset_order, batch_size):
     images_train, labels_train, images_val, labels_val = [], [], [], []
-    with tqdm(total=len(dataloaders['train'])) as pbar:
-    # with tqdm_notebook(total=len(dataloaders['train'])) as pbar:
-        for local_images_train, local_label_train in dataloaders['train']:
-            images_train += [local_images_train]
-            labels_train += [local_label_train]
-            pbar.update(1)
-    with tqdm(total=len(dataloaders['val'])) as pbar:
-    # with tqdm_notebook(total=len(dataloaders['val'])) as pbar:
-        for local_images_val, local_labels_val in dataloaders['val']:
-            images_val += [local_images_val]
-            labels_val += [local_labels_val]
-            pbar.update(1)
+    for i, mode in enumerate(['train', 'val']):
+        images_list = [images_train, images_val][i]
+        labels_list = [labels_train, labels_val][i]
+        with tqdm(total=len(dataloaders[mode])) as pbar:
+        # with tqdm_notebook(total=len(dataloaders[mode])) as pbar:
+            for local_images, local_label in dataloaders[mode]:
+                images_list += [local_images]
+                labels_list += [local_label]
+                pbar.update(1)
     images_train = torch.cat(images_train, axis=0)
     labels_train = torch.cat(labels_train, axis=0)
     images_val = torch.cat(images_val, axis=0)
     labels_val = torch.cat(labels_val, axis=0)
     datasets = {dataset_order[index]: TensorDataset(x[0], x[1]) for index, x in
                 enumerate([[images_train, labels_train], [images_val, labels_val]])}
-    dataloaders = {x: DataLoader(datasets[x], batch_size=batch_size,
-                                 shuffle=True)
+    dataloaders = {x: DataLoader(datasets[x], batch_size=batch_size, shuffle=True)
                    for x in ['train', 'val']}
     return dataloaders
 
@@ -211,6 +210,14 @@ def get_small_dataset_dataloader_test(dataloader, batch_size):
     dataset = TensorDataset(images_test, labels_test)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
     return dataloader
+
+def foward_step_no_labels(model, images):
+    # Must be done before you run a new batch. Otherwise the LSTM will treat a new batch as a continuation of a sequence
+    model.Lstm.reset_hidden_state()
+    with torch.no_grad():
+        output = model(images)
+    predicted_labels = output.detach().argmax(dim=1)
+    return predicted_labels.cpu()
 
 
 def foward_step(model, images, labels, criterion, mode=''):  # predections
@@ -279,9 +286,9 @@ def test_model_continues_movie(model, dataloader, device, criterion, save_path, 
     # ====== choosing one random batch from the dataloader ======
     dataloader_iter = iter(dataloader)
     images, labels = next(dataloader_iter)
+    predicted_labels_list = []
     # ===== create continues movie and labels tensor, with X frames from each movie ======
     # ===== and stack a sliding window of size 5 frames to new dim so they will act as batch ======
-    predicted_labels_list = []
     num_frames_to_sample = images.shape[1]
     sliding_window_images, continues_labels, continues_movie = create_sliding_window_x_frames_size_dataset\
         (images, labels, num_frames_to_sample)
@@ -290,7 +297,7 @@ def test_model_continues_movie(model, dataloader, device, criterion, save_path, 
         batch_images_to_plot = sliding_window_images[batch_boundaries: batch_boundaries + dataloader.batch_size].to(device)
         batch_labels = continues_labels[batch_boundaries: batch_boundaries + dataloader.batch_size].to(device)
         loss, acc, predicted_labels = foward_step(model, batch_images_to_plot, batch_labels, criterion, mode='test')
-        predicted_labels_list += [predicted_labels.detach().cpu()]
+        predicted_labels_list += [predicted_labels]
         val_acc += acc
     predicted_labels = torch.cat(predicted_labels_list, axis=0)
     val_loss += loss.item()
@@ -305,7 +312,36 @@ def test_model_continues_movie(model, dataloader, device, criterion, save_path, 
     return val_loss, val_acc, predicted_labels, images.cpu()
 
 
-def create_sliding_window_x_frames_size_dataset(local_images, local_labels, num_frames_to_sample):
+def test_model_continues_movie_youtube(model, data, device, save_path, label_decoder_dict, batch_size,
+                                       preprocessing_movie_mode, dataset_type='youtube', video_original_size=None,
+                                       read_video_original_size_dir=None):
+    model.eval()
+    if preprocessing_movie_mode == 'preprocessed':
+        # ====== choosing one random batch from the dataloader ======
+        dataloader_iter = iter(data)
+        images = next(dataloader_iter)
+        images = images.squeeze(0)
+        #todo check if it is correct and work
+        video_original_size = load_and_extract_video_original_size(dataloader_iter.dataset.images, read_video_original_size_dir)
+    else:
+        images = data
+    num_frames_to_sample = 5
+    # ===== create continues movie and labels tensor, with X frames from each movie ======
+    # ===== and stack a sliding window of size 5 frames to new dim so they will act as batch ======
+    sliding_window_images = create_sliding_window_x_frames_size_dataset\
+        (images, None, num_frames_to_sample, dataset_type)
+    # ====== predict the label of each sliding window, use batches beacuse of GPU memory ======
+    predicted_labels = predict_labels_of_sliding_window(sliding_window_images, batch_size, device, model)
+    save_path_plots = os.path.join(save_path, 'Plots')
+    create_folder_dir_if_needed(save_path_plots)
+    #todo if OK implement in the continues movie as well
+    plot_sliding_window_prediction_for_each_frame_no_labels(predicted_labels, save_path_plots, label_decoder_dict)
+    create_video_with_labels(save_path, 'Video_with_prediction_vs_true_labels.avi',
+                             images[:len(images)-num_frames_to_sample+1], None, predicted_labels, label_decoder_dict,
+                             video_original_size=video_original_size, fps=5)
+
+
+def create_sliding_window_x_frames_size_dataset(local_images, local_labels, num_frames_to_sample, dataset_type='UCF101'):
     """"
     This function would join all of the images in the batch to one long continues movie, which would be
     composed from num_batch human action movies (shape - num_batch*num_frames_to_sample, 3, 224, 224).
@@ -317,22 +353,28 @@ def create_sliding_window_x_frames_size_dataset(local_images, local_labels, num_
     window would be the first action
     """
     # ===== create continues movie, with X frames from each movie ======
-    local_images = local_images[:, :num_frames_to_sample]
-    continues_frames = local_images.view(local_images.shape[0] * local_images.shape[1], local_images.shape[2],
+    if dataset_type == 'UCF101':
+        local_images = local_images[:, :num_frames_to_sample]
+        continues_frames = local_images.view(local_images.shape[0] * local_images.shape[1], local_images.shape[2],
                                          local_images.shape[3], local_images.shape[4])
-    # ==== create continues label tensor where each frame has its own label ======
-    majority_of_num_of_frames = math.ceil(num_frames_to_sample/2) if num_frames_to_sample % 2 !=0 else num_frames_to_sample/2 + 1
-    mid_continues_labels = local_labels[1:len(local_labels)-1].view(-1, 1).repeat(1, num_frames_to_sample).view(-1)
-    start_continues_labels = local_labels[0].view(-1,1).repeat(1, majority_of_num_of_frames).view(-1)
-    end_continues_labeels =  local_labels[-1].view(-1,1).repeat(1, majority_of_num_of_frames).view(-1)
-    continues_labels = torch.cat((start_continues_labels, mid_continues_labels, end_continues_labeels))
+    else:
+        continues_frames = local_images
     sliding_window_images = []
     for num_frame in range(continues_frames.shape[0] - num_frames_to_sample + 1):
         # ===== normalize the frames according to the imagenet preprocessing =======
         sliding_window_images += [continues_frames[num_frame: num_frame + num_frames_to_sample]]
     sliding_window_images = torch.stack(sliding_window_images)
     continues_frames = continues_frames[:len(sliding_window_images)]
-    return sliding_window_images, continues_labels, continues_frames
+    if dataset_type == 'UCF101':
+        # ==== create continues label tensor where each frame has its own label ======
+        majority_of_num_of_frames = math.ceil(num_frames_to_sample/2) if num_frames_to_sample % 2 !=0 else num_frames_to_sample/2 + 1
+        mid_continues_labels = local_labels[1:len(local_labels)-1].view(-1, 1).repeat(1, num_frames_to_sample).view(-1)
+        start_continues_labels = local_labels[0].view(-1, 1).repeat(1, majority_of_num_of_frames).view(-1)
+        end_continues_labeels =  local_labels[-1].view(-1, 1).repeat(1, majority_of_num_of_frames).view(-1)
+        continues_labels = torch.cat((start_continues_labels, mid_continues_labels, end_continues_labeels))
+        return sliding_window_images, continues_labels, continues_frames
+    else:
+        return sliding_window_images
 
 
 def plot_function_of_num_frames_in_window_on_prediction(continues_labels, predicted_labels, save_path_plots,  num_frames_to_sample):
@@ -361,10 +403,17 @@ def save_loss_info_into_a_file(train_loss, val_loss, train_acc, val_acc, folder_
                   .format(epoch, train_loss, train_acc, val_loss, val_acc))
 
 
-def set_transform_and_save_path(folder_dir, file_name):
-    if 'test' in file_name:
+def set_transform_and_save_path(folder_dir, file_name, processing_mode):
+    # ====== set the transform of the image according to test and train data ======
+    if processing_mode == 'live':
+        transform = set_transforms('test_live')
+        save_path = folder_dir
+    elif 'test' in file_name:
         transform = set_transforms('test')
-        save_path = os.path.join(folder_dir, 'test')
+        if 'youtube' in file_name:
+            save_path = folder_dir
+        else:
+            save_path = os.path.join(folder_dir, 'test')
     elif 'train' in file_name:
         transform = set_transforms('train')
         save_path = os.path.join(folder_dir, 'train')
@@ -378,14 +427,23 @@ def set_transforms(mode):
              transforms.RandomCrop(224),
              transforms.RandomHorizontalFlip()
              ])
+    elif mode == 'test_live':
+        transform = transforms.Compose([transforms.Resize((224, 224)), transforms.ToTensor(),
+                                            transforms.Normalize(mean=(0.485, 0.456, 0.406),
+                                                                 std=(0.229, 0.224, 0.225))])
     else:
         transform = transforms.Compose([transforms.Resize((224, 224))])
     return transform
 
 
 def create_new_video(save_path, video_name, image_array):
-    (h, w) = image_array[0].size[:2]
-    save_video_path = os.path.join(save_path, video_name.split('/')[1])
+    (h, w) = image_array[0].shape[:2]
+    if len(video_name.split('/')) > 1:
+        video_name = video_name.split('/')[1]
+    else:
+        video_name = video_name.split('.mp4')[0]
+        video_name = video_name + '.avi'
+    save_video_path = os.path.join(save_path, video_name)
     output_video = cv2.VideoWriter(save_video_path, cv2.VideoWriter_fourcc(*'MJPG'), 5, (w, h), True)
     for frame in range(len(image_array)):
         output_video.write(image_array[frame])
@@ -393,70 +451,120 @@ def create_new_video(save_path, video_name, image_array):
     cv2.destroyAllWindows()
 
 
-def create_video_with_labels(save_path, video_name, image_array, continues_labels, predicted_labels, label_decoder_dict):
+def create_video_with_labels(save_path, video_name, image_array, continues_labels, predicted_labels, label_decoder_dict,
+                             video_original_size=None, fps=3): #todo modle it
+    #todo resize the image the original shape?
     path_save_videos = os.path.join(save_path, 'Videos')
     create_folder_dir_if_needed(path_save_videos)
-    image_array = image_array.transpose(2, 1).transpose(2, 3).numpy()
+    (w, h) = (320, 240) if video_original_size is None else (int(video_original_size[0]), int(video_original_size[1]))
+    image_array = F.interpolate(image_array, size=(w, h))
+    image_array = image_array.transpose(2, 1).transpose(2, 3)
     n_frames = len(image_array)
     h_fig = plt.figure(figsize=(4, 4))
-    h_ax = h_fig.add_axes([0.05, 0.05, 0.9, 0.87])
+    # ====== plot frame, woulc change with every frame ======
+    h_ax = h_fig.add_axes([0.1, 0.1, 0.80, 0.98])
     img = (image_array[0] - image_array[0].min()) / (image_array[0].max() - image_array[0].min())
     h_im = h_ax.matshow(img)
     h_ax.set_axis_off()
     h_im.set_interpolation('none')
     h_ax.set_aspect('equal')
-    if continues_labels is not None:
-        bool_array = continues_labels == predicted_labels
-        h_text_1 = plt.text(0.02, 0.97, 'Original_labels', color='black', fontsize=8, transform=plt.gcf().transFigure)
-        h_text_3 = plt.text(0.47, 0.01, 'True/False', color='red', fontsize=8, transform=plt.gcf().transFigure,
-                            path_effects=[pe.withStroke(linewidth=1, foreground="black")])
-    h_text_2 = plt.text(0.02, 0.94, 'Predicted labels - {}'.format(label_decoder_dict[predicted_labels[0].item()]), color='blue', fontsize=8, transform=plt.gcf().transFigure)
+    # ======== plot the label prediction with the frame =====
+    h_ax_plot = h_fig.add_axes([0.1, 0.22, 0.8, 0.06])
+    color_dict = create_color_dict(predicted_labels)
+    color_list = []
+    x_array = np.arange(len(predicted_labels))
+    y_array = np.zeros(len(x_array))
+    bool_array = None if continues_labels is None else continues_labels == predicted_labels
+    h_text_object = set_text_to_video_frame(continues_labels, label_decoder_dict,
+                                                               predicted_labels, bool_array=bool_array)
 
     FFMpegWriter = manimation.writers['ffmpeg']
     metadata = dict(title=video_name, artist='Matplotlib')
-    writer = FFMpegWriter(fps=3, metadata=metadata)
-    with writer.saving(h_fig, os.path.join(path_save_videos, video_name), dpi=150):  # change from 600 dpi
+    writer = FFMpegWriter(fps=fps, metadata=metadata)
+    with writer.saving(h_fig, os.path.join(path_save_videos, video_name), dpi=450):  # change from 600 dpi
         for i in range(n_frames):
-            if continues_labels is not None:
-                h_text_1.set_text('Original label - {}'.format(label_decoder_dict[continues_labels[i].item()]))
-                color = 'green' if bool_array[i].item() else 'red'
-                h_text_3.remove()
-                h_text_3 = plt.text(0.44, 0.01, str(bool_array[i].item()), color=color, fontsize=8,
-                                    transform=plt.gcf().transFigure,
-                                    path_effects=[pe.withStroke(linewidth=1, foreground="black")])
-                h_text_2.set_text('Predicted labels - {}'.format(label_decoder_dict[predicted_labels[i].item()]))
-
+            set_text_to_video_frame(continues_labels, label_decoder_dict,
+                                                        predicted_labels, h_text_object=h_text_object, bool_array=bool_array, frame=i)
             img = (image_array[i] - image_array[i].min()) / (image_array[i].max() - image_array[i].min())
             h_im.set_array(img)
+            if i > 0:
+                h_im_2.remove()
+            y_array[:i + 1] = 1
+            color_list += [color_dict[predicted_labels[i].item()]]
+            h_im_2 = h_ax_plot.bar(x_array, y_array, color=color_list, width=1.0)
+            h_ax_plot.get_yaxis().set_ticks([])
+            h_ax_plot.set_ylim(0, 1)
+            h_ax_plot.set_xlim(0, len(x_array))
             writer.grab_frame()
     plt.close()
 
 
-def setting_sample_rate(num_frames_to_extract, sampling_rate, video, fps):
+def setting_sample_rate(num_frames_to_extract, sampling_rate, video, fps, ucf101_fps):
     video.set(cv2.CAP_PROP_POS_AVI_RATIO, 1)
     video_length = video.get(cv2.CAP_PROP_POS_MSEC) / 1000
-    num_frame = int(video_length * fps)
-    if video_length < (num_frames_to_extract * sampling_rate):
+    num_frames = int(video_length * fps)
+    if num_frames_to_extract == 'all':
+        sample_start_point = 0
+        if fps != ucf101_fps and sampling_rate !=0:
+            sampling_rate = math.ceil(fps / (ucf101_fps/sampling_rate))
+    elif video_length < (num_frames_to_extract * sampling_rate):
         sample_start_point = 0
         sampling_rate = 2
     else:
-        sample_start_point = sample(range(num_frame - (num_frames_to_extract * sampling_rate)), 1)[0]
-    return sample_start_point, sampling_rate
+        sample_start_point = sample(range(num_frames - (num_frames_to_extract * sampling_rate)), 1)[0]
+    return sample_start_point, sampling_rate, num_frames
 
 
-def load_test_data(model_dir):
+def capture_and_sample_video(row_data_dir, video_name, num_frames_to_extract, sampling_rate, fps, transform, save_path,
+                             ucf101_fps, processing_mode):
+    video = cv2.VideoCapture(os.path.join(row_data_dir, video_name))
+    if fps == 'Not known':
+        fps = video.get(cv2.CAP_PROP_FPS)
+    video_width = video.get(cv2.CAP_PROP_FRAME_WIDTH)
+    video_hight = video.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    sample_start_point, sampling_rate, num_frames = setting_sample_rate(num_frames_to_extract, sampling_rate, video,
+                                                            fps, ucf101_fps)
+    # ====== setting the video to start reading from the frame we want ======
+    image_array = []
+    if num_frames_to_extract == 'all':
+        num_frames_to_extract = int(num_frames/sampling_rate) if sampling_rate != 0 else num_frames
+    for frame in range(num_frames_to_extract):
+        video.set(1, sample_start_point)
+        success, image = video.read()
+        if not success:
+            print('Error in reading frames from row video')
+        else:
+            RGB_img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) if processing_mode == 'live' else image
+            image = Image.fromarray(RGB_img.astype('uint8'), 'RGB')
+            image = transform(image)
+            if processing_mode == 'live':
+                image_array += [image]
+            else:
+                image_array += [np.uint8(image)]
+        sample_start_point = sample_start_point + sampling_rate
+    video.release()
+    if processing_mode == 'main':
+        create_new_video(save_path, video_name, image_array)
+    return image_array, [video_hight, video_width]
+
+
+def load_test_data(model_dir, mode='load_all'):
     global_dir = os.path.normpath(model_dir + os.sep + os.pardir)
-    with open(os.path.join(global_dir, 'test_videos_detailes.txt')) as f:
-        video_list = f.readlines()
-    test_videos_names, labels = [], []
-    for video_name_with_label in video_list:
-        video_name, label = video_name_with_label.split(' ')
-        test_videos_names += [video_name]
-        labels += [int(label.rstrip('\n'))]
+    if mode == 'load_all':
+        with open(os.path.join(global_dir, 'test_videos_detailes.txt')) as f:
+            video_list = f.readlines()
+        test_videos_names, labels = [], []
+        for video_name_with_label in video_list:
+            video_name, label = video_name_with_label.split(' ')
+            test_videos_names += [video_name]
+            labels += [int(label.rstrip('\n'))]
     # open labels_decoder_dict
     with open(os.path.join(global_dir,'labels_decoder_dict.pkl'), 'rb') as f:
         labels_decoder_dict = pickle.load(f)
-    return test_videos_names, labels, labels_decoder_dict
+    if mode == 'load_all':
+        return test_videos_names, labels, labels_decoder_dict
+    else:
+        return labels_decoder_dict
 
 
 def plot_confusion_matrix(predicted_labels, true_labels, label_decoder_dict, save_path):
@@ -522,7 +630,7 @@ def check_if_batch_size_bigger_than_num_classes(batch_size, num_of_classes):
               '2. Reduce the number of classes so it would be bigger or equal to the batch size.\n'
               '3. Stop using the custom sampler: erase the sampler parameter from the dataloader and change the shuffle '
               'parameter to True.')
-        sys.stop()
+        sys.exit()
 
 
 def plot_sliding_window_prediction_for_each_frame(continues_labels, predicted_labels, save_path_plots, label_decoder_dict, original_order_of_labels):
@@ -580,3 +688,119 @@ def increase_the_error_value_for_non_neighbors_labels(matrix_col):
         if dist_between_indices > 1:
             matrix_col[matrix_col==1] = 5
     return matrix_col
+
+
+def print_dataset_type_error():
+    print(
+        'You have enter a wrong dataset type in the dataset function. please fix it. possabilites are youtube or UCF101(the default)')
+    sys.exit()
+
+
+def plot_sliding_window_prediction_for_each_frame_no_labels(predicted_labels, save_path_plots, label_decoder_dict):
+    original_order_of_labels = []
+    for label in predicted_labels:
+        if label.item() in original_order_of_labels:
+            pass
+        else:
+            original_order_of_labels += [label]
+    one_hot_matrix_to_plot = create_one_hot_vector_matrix(predicted_labels.numpy(), max(predicted_labels).item())
+    one_hot_matrix_to_plot = resort_matrix(original_order_of_labels, one_hot_matrix_to_plot)
+    one_hot_matrix_to_plot = one_hot_matrix_to_plot[~np.all(one_hot_matrix_to_plot == 0, axis=1)]
+    fig, ax = plt.subplots(figsize=(12, 10))
+    im = ax.imshow(one_hot_matrix_to_plot, cmap='GnBu', aspect='auto')
+    skip_x_ticks = math.ceil(len(predicted_labels) / 15)
+    x_array = np.arange(0, len(predicted_labels), skip_x_ticks)
+    y_labels = [label_decoder_dict[label_code.item()] for label_code in original_order_of_labels]
+    y_ticks = np.arange(len(original_order_of_labels))
+    ax.set_ylim(len(y_labels), -0.3)
+    ax.set_xticklabels(x_array, fontsize=10)
+    ax.set_yticks(y_ticks)
+    ax.set_yticklabels(y_labels, fontsize=10)
+    # ==== create coustomize legand to the heat map =====
+    values = ['None', 'Predicted_labels']
+    colors = [im.cmap(im.norm(value)) for value in range(len(values))]
+    patches = [mpatches.Patch(color=colors[i], label=values[i], edgecolor='b') for i in
+               range(len(values))]
+    plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.5, frameon=True)
+    plt.title('Label Prediction in each frame', fontsize=14)
+    plt.savefig(os.path.join(save_path_plots, 'change_in_accuracy_with_the_movement_of_sliding_window.png'), dpi=300,
+                bbox_inches='tight')
+
+
+def print_error_preprocessing_movie_mode():
+        print('Your value in the pre-processing movie mode is incorrect. your options are:\n'
+              '1. live pre-processing.\n'
+              '2. pre-processied movie. \n'
+              'please choose one of them')
+        sys.exit()
+
+
+def predict_labels_of_sliding_window(sliding_window_images, batch_size, device, model):
+    predicted_labels_list = []
+    for batch_boundaries in range(0, len(sliding_window_images), batch_size):
+        batch_images_to_plot = sliding_window_images[batch_boundaries: batch_boundaries + batch_size].to(device)
+        predicted_labels = foward_step_no_labels(model, batch_images_to_plot)
+        predicted_labels_list += [predicted_labels]
+    return torch.cat(predicted_labels_list, axis=0)
+
+
+def set_text_to_video_frame(continues_labels, label_decoder_dict, predicted_labels, h_text_object=None, frame='start', bool_array=None, ):
+    if frame == 'start':
+        h_text_1 = plt.text(0.25, 0.12, 'Predicted labels - {}'.format(label_decoder_dict[predicted_labels[0].item()]),
+                            color='blue', fontsize=8, transform=plt.gcf().transFigure)
+        if continues_labels is not None:
+            #todo change the locations of the texts to the correct ones after the plot
+            h_text_2 = plt.text(0.3, 0.07, 'Original_labels', color='black', fontsize=8, transform=plt.gcf().transFigure)
+            h_text_3 = plt.text(0.47, 0.01, 'True/False', color='red', fontsize=8, transform=plt.gcf().transFigure,
+                            path_effects=[pe.withStroke(linewidth=1, foreground="black")])
+            return {index+1: text_object for index, text_object in [h_text_1, h_text_2, h_text_3]}
+        else:
+            return {1 : h_text_1}
+    else:
+        h_text_object[1].set_text('Predicted labels - {}'.format(label_decoder_dict[predicted_labels[frame].item()]))
+        if continues_labels is not None:
+            h_text_object[2].set_text('Original label - {}'.format(label_decoder_dict[continues_labels[frame].item()]))
+            color = 'green' if bool_array[frame].item() else 'red'
+            h_text_object[3].remove()
+            h_text_object[3] = plt.text(0.44, 0.01, str(bool_array[frame].item()), color=color, fontsize=8,
+                            transform=plt.gcf().transFigure,
+                            path_effects=[pe.withStroke(linewidth=1, foreground="black")])
+
+
+def generate_list_of_colors(num_labels):
+    green_color_codes = [[154,205,50],[85,107,47],[107,142,35], [124,252,0], [127,255,0], [173,255,47], [0,100,0],
+                         [0,128,0], [34,139,34], [0,255,0], [50,205,50], [144,238,144], [152,251,152], [60,179,113],
+                         [46,139,87], [0,255,127], [0,250,154]]
+    color_list = []
+    for i in range(num_labels):
+        color = list(np.random.choice(range(256), size=3))
+
+        while color in color_list or color in green_color_codes:
+            color = list(np.random.choice(range(256), size=3))
+        color_norm = [single_color / 255 for single_color in color]
+        color_list += [color_norm]
+    color_list_tuple = [tuple(color_as_list) for color_as_list in color_list]
+    return color_list_tuple
+
+
+def create_color_dict(predicted_labels):
+    unique_labels = predicted_labels.unique()
+    color_list = generate_list_of_colors(len(unique_labels))
+    color_dict ={}
+    for index, label in enumerate(unique_labels):
+        index_of_specific_label = (predicted_labels == label.item()).nonzero()
+        if len(index_of_specific_label) > (0.5 * len(predicted_labels)):
+            color_list[index] = 'green'
+        color_dict[label.item()] = color_list[index]
+    return color_dict
+
+
+def save_video_original_size_dict(video_original_size_dict, save_path):
+    with open(os.path.join(save_path, 'video_original_size_dict.pkl'), 'wb') as f:
+        pickle.dump(video_original_size_dict, f, pickle.HIGHEST_PROTOCOL)
+
+
+def load_and_extract_video_original_size(video_name, read_video_original_size_dir):
+    with open(os.path.join(read_video_original_size_dir, 'video_original_size_dict.pkl'), 'rb') as f:
+        dict = pickle.load(f)
+    return dict[video_name]
