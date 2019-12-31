@@ -28,7 +28,7 @@ parser.add_argument('--num_frames_video', default=5, type=int,
                     help='The number of frames that would be sampled from each video (default:5)')
 parser.add_argument('--seed', default=42, type=int,
                     help='initializes the pseudorandom number generator on the same number (default:42)')
-parser.add_argument('--load_all_data_to_RAM', default=True, type=bool,
+parser.add_argument('--load_all_data_to_RAM', default=False, type=bool,
                     help='load dataset directly to the RAM, for faster computation. usually use when the num of class '
                          'is small (default:False')
 parser.add_argument('--latent_dim', default=512, type=int, help='The dim of the Conv FC output (default:512)')
