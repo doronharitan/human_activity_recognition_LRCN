@@ -158,16 +158,32 @@ def plot_images_with_predicted_labels(local_x, label_decoder_dict, predicted_lab
     create_folder_dir_if_needed(folder_save_images)
     n_rows = math.trunc(math.sqrt(len(local_x)))
     n_cols = n_rows
-    fig, ax = plt.subplots(ncols=n_cols, nrows=n_rows, figsize=(10, 10))
-    for row in range(n_rows):
-        for col in range(n_cols):
-            img = local_x[col + (row * n_cols)][0].permute(1, 2, 0)
-            img_scale = (img - img.min()) / (img.max() - img.min())
-            ax[row, col].imshow(img_scale)
-            label_for_title = label_decoder_dict[predicted_labels[col + (row * n_cols)].item()]
-            ax[row, col].set_title(label_for_title)
-            ax[row, col].set_xticks([])
-            ax[row, col].set_yticks([])
+    if n_rows == 1 and n_cols == 1:
+        plot_single_images_with_predicted_labels(local_x, label_decoder_dict, predicted_labels, folder_save_images, epoch)
+    else:
+        fig, ax = plt.subplots(ncols=n_cols, nrows=n_rows, figsize=(10, 10))
+        for row in range(n_rows):
+            for col in range(n_cols):
+                img = local_x[col + (row * n_cols)][0].permute(1, 2, 0)
+                img_scale = (img - img.min()) / (img.max() - img.min())
+                ax[row, col].imshow(img_scale)
+                label_for_title = label_decoder_dict[predicted_labels[col + (row * n_cols)].item()]
+                ax[row, col].set_title(label_for_title)
+                ax[row, col].set_xticks([])
+                ax[row, col].set_yticks([])
+        plt.savefig(os.path.join(folder_save_images, 'predicted_labels {} epoch.png'.format(epoch)))
+        plt.close()
+
+
+def plot_single_images_with_predicted_labels(local_x, label_decoder_dict, predicted_labels, folder_save_images, epoch):
+    fig, ax = plt.subplots(figsize=(10, 10))
+    img = local_x[0][0].permute(1, 2, 0)
+    img_scale = (img - img.min()) / (img.max() - img.min())
+    ax.imshow(img_scale)
+    label_for_title = label_decoder_dict[predicted_labels[0].item()]
+    ax.set_title(label_for_title)
+    ax.set_xticks([])
+    ax.set_yticks([])
     plt.savefig(os.path.join(folder_save_images, 'predicted_labels {} epoch.png'.format(epoch)))
     plt.close()
 
@@ -508,7 +524,6 @@ def create_video_with_labels(save_path, video_name, image_array, continues_label
             h_im.set_array(img)
             if i > 0:
                 h_im_2.remove()
-            print(i)
             y_array[:i + 1] = 1
             color_list += [color_dict[predicted_labels[i].item()]]
             h_im_2 = h_ax_plot.bar(x_array, y_array, color=color_list, width=1.0)
