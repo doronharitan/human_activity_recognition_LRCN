@@ -3,7 +3,8 @@ from random import sample
 import torch
 import os
 from utils_action_recognition import set_project_folder_dir, \
-    save_setting_info,test_model_continues_movie_youtube, load_test_data, print_error_preprocessing_movie_mode
+    save_setting_info,test_model_continues_movie_youtube, load_test_data, print_error_preprocessing_movie_mode,\
+    load_and_extract_video_original_size
 from create_dataset import UCF101Dataset
 from torch.utils.data import DataLoader
 from lrcn_model import ConvLstm
@@ -19,7 +20,7 @@ parser.add_argument('--preprocessing_movie_mode', default='live', type=str,
 parser.add_argument('--dataset', default='youtube', type=str,
                     help='the dataset name. options = youtube, UCF101')
 parser.add_argument('--FPS', default=25, type=int, help='')
-parser.add_argument('--sampling_rate', default=10, type=int, help='how to sample the data')
+parser.add_argument('--sampling_rate', default=10, type=int, help='how to sample the data') #todo remove is calculated automattocally
 parser.add_argument('--row_data_dir', default=r'C:\Users\Doron\Desktop\ObjectRecognition data\youtube_videos/', type=str,
                     help='path to find the UCF101 row data')
 
@@ -48,8 +49,9 @@ def main():
     if args.preprocessing_movie_mode == 'preprocessed':
         dataset = UCF101Dataset(args.sampled_data_dir, [test_videos_names], mode='test', dataset='youtube')
         dataloader = DataLoader(dataset, batch_size=len(test_videos_names), shuffle=False)
+        video_original_size_dict = load_and_extract_video_original_size(args.sampled_data_dir)
         test_model_continues_movie_youtube(model, dataloader, device, folder_dir, label_decoder_dict, args.batch_size,
-                                           args.preprocessing_movie_mode, read_video_original_size_dir=args.sampled_data_dir)
+                                           args.preprocessing_movie_mode, video_original_size=video_original_size_dict)
     elif args.preprocessing_movie_mode == 'live':
         movie_name_to_test = sample(test_videos_names, 1)
         test_movie, video_original_size = main_procesing_data(args, folder_dir, sampled_video_file=movie_name_to_test, processing_mode='live')

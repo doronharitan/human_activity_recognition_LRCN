@@ -1,6 +1,6 @@
 import argparse
 from tqdm import tqdm
-from utils_action_recognition import create_folder_dir_if_needed, set_transform_and_save_path, \
+from utils_action_recognition import create_folder_dir_if_needed, \
     capture_and_sample_video, save_video_original_size_dict, save_setting_info
 from tqdm import tnrange, tqdm_notebook #used when I run in colab/GCloud
 import os
@@ -20,7 +20,7 @@ parser.add_argument('--dataset', default='UCF101', type=str,
                     help='the dataset name. options = youtube, UCF101')
 
 
-def main_procesing_data(args, folder_dir, sampled_video_file=None, processing_mode='main', no_sampling=False):
+def main_procesing_data(args, folder_dir, sampled_video_file=None, processing_mode='main'):
     """"
        Create the sampled data video,
        input - video, full length.
@@ -32,10 +32,8 @@ def main_procesing_data(args, folder_dir, sampled_video_file=None, processing_mo
        """
     if args.dataset == 'UCF101':
         for file_name in os.listdir(args.ucf_list_dir):
-            if 'classInd' in file_name:
-                pass
-            else:
-                transform, save_path = set_transform_and_save_path(folder_dir, file_name, processing_mode)
+            # ===== reading all of the row data from the first split of train and test =====
+            if '1' in file_name:
                 with open(os.path.join(args.ucf_list_dir, file_name)) as f:
                     video_list = f.readlines()
                 with tqdm(total=len(video_list)) as pbar:
@@ -43,21 +41,23 @@ def main_procesing_data(args, folder_dir, sampled_video_file=None, processing_mo
                     for video_name in video_list:
                         video_name = video_name.split(' ')[0].rstrip('\n')
                         capture_and_sample_video(args.row_data_dir, video_name, args.num_frames_to_extract,
-                                                 args.sampling_rate, args.ucf101_fps, transform, save_path,
+                                                 args.sampling_rate, args.ucf101_fps, folder_dir,
                                                  args.ucf101_fps, processing_mode)
                         pbar.update(1)
+            else:
+                pass
+
     elif args.dataset == 'youtube':
-        transform, save_path = set_transform_and_save_path(folder_dir, 'test_youtube', processing_mode)
         video_original_size_dict = {}
         if args.video_file_name is None and sampled_video_file is None:
             for file_name in os.listdir(args.row_data_dir):
-                video_test, video_original_size = capture_and_sample_video(args.row_data_dir, file_name, 'all', args.sampling_rate, 'Not known', transform,
-                                         save_path, args.ucf101_fps, processing_mode)
+                video_test, video_original_size = capture_and_sample_video(args.row_data_dir, file_name, 'all', args.sampling_rate, 'Not known',
+                                         folder_dir, args.ucf101_fps, processing_mode)
                 video_original_size_dict[file_name] = video_original_size
         else:
             file_name = args.video_file_name if sampled_video_file is None else sampled_video_file[0]
-            video_test, video_original_size = capture_and_sample_video(args.row_data_dir, file_name, 'all', args.sampling_rate, 'Not known', transform,
-                                     save_path, args.ucf101_fps, processing_mode)
+            video_test, video_original_size = capture_and_sample_video(args.row_data_dir, file_name, 'all', args.sampling_rate, 'Not known',
+                                     folder_dir, args.ucf101_fps, processing_mode)
             video_original_size_dict[file_name] = video_original_size
         save_video_original_size_dict(video_original_size_dict, save_path)
         if processing_mode == 'live':
@@ -67,9 +67,9 @@ def main_procesing_data(args, folder_dir, sampled_video_file=None, processing_mo
 if __name__ == '__main__':
     args = parser.parse_args()
     global_dir = os.path.normpath(args.row_data_dir + os.sep + os.pardir)
-    folder_name = '{} sampled data video, sampling_rate: {}, num frames extracted: {}'.format(args.dataset, args.sampling_rate,
+    folder_name = '{}_sampled_data_video_sampling_rate_{}_num frames extracted_{}'.format(args.dataset, args.sampling_rate,
         args.num_frames_to_extract)
     folder_dir = os.path.join(global_dir, folder_name)
+    create_folder_dir_if_needed(folder_dir)
     save_setting_info(args, "cpu", folder_dir)
-    create_folder_dir_if_needed(folder_dir, mode='preprocessing_data_{}'.format(args.dataset))
     main_procesing_data(args, folder_dir)
