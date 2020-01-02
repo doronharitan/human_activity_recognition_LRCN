@@ -190,7 +190,7 @@ from the confusion matrix, shown below, we can see that model something confused
 
 - _**Diverse human actions video test mode**_ - In this test the model reached a classification accuracy of **73.6%**.
    
-   ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/Video_with_prediction_vs_true_labels.gif) 
+   <p align="center"><img width="500" height="400" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/Video_with_prediction_vs_true_labels.gif"></p>
    
     In order to shed some light on why the model reached lower classification accuracy than the classification accuracy reached in the basic test mode,
      I analyzed the ability of the model to classify an action as a function of the number of frames we have from the first action in the sliding window. [A reminder what we did in this test mode](#diverse-human-actions-video-test-mode) 
