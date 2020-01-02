@@ -101,7 +101,7 @@ The video was created by random picking and grouping 5-frames* test videos (down
    meaning if the sliding window has 3 frames from the first action and two from the next action ,the label of the sliding
    window would be the first action
       
-   ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/Video_with_prediction_vs_true_labels.gif)
+   ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/what_is_sliding_window.gif)
 
    In this mode we also test how accurate the model is when the 5-frames* model input consistent from different human actions (for example the first 3 frames are form one video 
    and the last two are the start of a second video).
@@ -208,7 +208,7 @@ from the confusion matrix, shown below, we can see that model something confused
      Could it be that in this scenario the model predicts the second action and not the first as I thought?
      (This would explain the decrease in the classification accuracy of a window with 3 frames from the first action but not the decrease of a window with 3 frames from the second action ) 
      
-     ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/analysis_of_predicted_labels_in_sliding_window.png) 
+     ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/change_in_accuracy_with_the_movment_of_sliding_window.png) 
       
      The above results indecates that ....
 ## Referance
