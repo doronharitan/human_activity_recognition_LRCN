@@ -1,4 +1,4 @@
-![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/v_CuttingInKitchen_g10_c03.avi)
+![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/v_CuttingInKitchen_g10_c03.gif)
 
 # Action Recognition in Video using LRCN
 PyTorch implementation of Long-term Recurrent Convolutional Networks (LRCN) [1]
