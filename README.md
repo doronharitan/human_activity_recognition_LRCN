@@ -204,7 +204,7 @@ from the confusion matrix, shown below, we can see that model something confused
      the true label of the window is set according to the majority of the frames.
      Could it be that in this scenario the model predicts the second action and not the first as I thought?
      (This would explain the decrease in the classification accuracy of a window with 3 frames from the first action but not the decrease of a window with 3 frames from the second action ) 
-     <img width="300" height="250" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/analysis_of_predicted_labels_in_sliding_window.png">
+     <img align="right" width="300" height="250" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/analysis_of_predicted_labels_in_sliding_window.png">
 
      <p align="center"><img width="700" height="400" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/change_in_accuracy_with_the_movment_of_sliding_window.png"></p>
       
