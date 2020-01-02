@@ -1,13 +1,13 @@
 # Action Recognition in Video using LRCN
-PyTorch implementation of Long-term Recurrent Convolutional Networks (LRCN) [1]
+PyTorch implementation of Long-term Recurrent Convolutional Networks (LRCN) [1](#1.)
 
 ## LRCN model
 The following network enables human action recognition in videos.
- The network utilies frame embeddings that were extracted by a pre-trained ResNet-152 (ImageNet) and a bi-directional LSTM operating on them in order to predict the preformed  action in the input video.
+ The network utilise frame embeddings that were extracted by a pre-trained ResNet-152 (ImageNet) and a bi-directional LSTM operating on them in order to predict the preformed action in the input video.
 
 The input of the network would be a short 5 frames* video presenting human activity. 
 
-In the train and in the basic test mode the frames would be extracted from raw video taken from UCF-101 
+In the train and in the basic test mode the frames would be extracted from raw video taken from [UCF-101](https://www.crcv.ucf.edu/data/UCF101.php) [2](#2.)
 Dataset (using the script preprocessing_data.py, for further information see 'Data Pre-processing' paragraph below). The raw video would be sampled before the extraction of the frames to lower FPS (default from 25 FPS to 2.5 FPS). Then randomly, a start point to sample the video would be generated, and 5 continues frames (total of 2 sec) would be extracted and save as a short video which would be used as the input to the network.
 
 *default settings, can be changed using the train and preprocessing parameters
@@ -165,7 +165,47 @@ python test_Youtube_videos.py   --row_data_dir dir_of_the_row_data_videos\
 ```
 
 ## Results
-WIP
+The train model that was tested below was trained on a randomly chosen train/test set (from the 3 possible provided by UCF-101 dataset).
+The model was trained and thus, tested on 55 classes from the 101 possible classes in UCF-101 dataset.
+- Basic test mode:  The model reached a classification accuracy of **90.5%**.
 
-## Conclusion?
-WIP
+In order to understand the ability of the model to classify correctly each class I run a confusion matrix.
+from the confusion matrix, shown below, we can see that model something confused relatively similar classes, for example: 'Military Parade' with 'Band marching' and 'Haircut' with 'Blow Dry Hair'.
+
+   ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/Normalized_confusion_matrix.png)
+   
+   The above raised the question if the model 'confusion' (seen in the confusion matrix)  can be caused by the frequency of each class in the dataset.
+   Could it be that the low represented class has higher tendency to be confused? or does the confusion comes from the fact that the classes are similar?
+   
+   The frequency of each class in the train/validation and in the test set can be seen below. We can see that their are classes that have lower representation in the dataset. for example 'Blowing Candles'
+   
+   ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/train_val.jpg) ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/test.jpg)
+
+  To test if the classification accuracy correlates with the frequency of each class, I plotted the accuracy of each class and marked in 'red' all of the classes that their frequency in the train dataset is lower than 90% of the average.
+   From the results, shown below, we can see that their isn't a tight correlation and that there are classes that their classification accuracy is low and their frequency is high. 
+
+   ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/The_accuracy_score_for_each_class.png)
+
+- Diverse human actions video test mode - In this test the model reached a classification accuracy of **75.06%**.
+    ** add the movie
+    In order to shed some light on why the model reached lower classification accuracy score than the score in the basic test mode,
+     I analyzed the ability of the model to classify an action as a function of the number of frames we have from the first action in the sliding window. [A reminder what we did in this test mode](#Diverse human actions video test mode) 
+
+        * add results
+        
+     The results show that the classification accuracy depend on the number of frames we have from each class. 
+     When all of the frames are from one action (5 frames) the model has high classification accuracy.
+     When it has 4 frames from the first action the classification accuracy decreases but not by much. 
+     When the number of frames become similar (in the case of 3 frames from the first action or 3 frames 
+     from the second action) the classification accuracy decrease by ~80% (in this specific run). 
+     This means that the model doesn't follow the rule I set which determined that
+     the true label of the window is set according to the majority of the frames.
+     Could it be that in this scenario the model predicts the second action and not the first as I thought?
+     (This would explain the decrease in the classification accuracy of a window with 3 frames from the first action but not the decrease with a window of 3 frames from the second action ) 
+       
+       *add figure
+      
+      The above results indecates that ....
+## Referance
+1. Donahue, Jeffrey, et al. "Long-term recurrent convolutional networks for visual recognition and description." Proceedings of the IEEE conference on computer vision and pattern recognition. 2015.
+2. Soomro, Khurram, Amir Roshan Zamir, and Mubarak Shah. "UCF101: A dataset of 101 human actions classes from videos in the wild." arXiv preprint arXiv:1212.0402 (2012).

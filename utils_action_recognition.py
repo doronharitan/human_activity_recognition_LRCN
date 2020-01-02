@@ -63,11 +63,13 @@ def plot_label_distribution(dataloaders, folder_dir, load_all_data_to_RAM_mode, 
 
 def plot_distribution(datasets_list, dataset_names_list, load_all_data_to_RAM_mode, folder_dir, label_decoder_dict):
     plt.figure(figsize=(10, 6))
-    for dataset in datasets_list:
+    for index, dataset in enumerate(datasets_list):
         if load_all_data_to_RAM_mode:
             counter_occurrence_of_each_class = Counter(dataset.tensors[1].tolist())
         else:
             counter_occurrence_of_each_class = Counter(dataset.labels)
+        with open(os.path.join(folder_dir, 'frequency_of_each_class_{}.pkl'.format(dataset_names_list[index])), 'wb') as f:
+            pickle.dump(counter_occurrence_of_each_class, f, pickle.HIGHEST_PROTOCOL)
         sorted_counter = sorted(counter_occurrence_of_each_class.items())
         x, y = zip(*sorted_counter)
         plt.bar(x, y)
@@ -82,6 +84,7 @@ def plot_distribution(datasets_list, dataset_names_list, load_all_data_to_RAM_mo
     plt.xlim(-1, max(x) + 1)
     plt.savefig(os.path.join(folder_dir, '_'.join(dataset_names_list) + '.jpg'), dpi=300, bbox_inches="tight")
     plt.close()
+
 
 
 def split_data(ucf_list_root, seed, number_of_classes, split_size, folder_dir):
@@ -617,6 +620,10 @@ def plot_confusion_matrix(predicted_labels, true_labels, label_decoder_dict, sav
 def plot_acc_per_class(predicted_labels, true_labels, label_decoder_dict, save_path):
     # ===== count the number of times each class appear in the test data =====
     frequency_of_each_class = Counter(true_labels.tolist())
+    # ===== load the frequency counter for the train dataset, would be used to mark low frequency classes =====
+    global_dir = os.path.normpath(save_path + os.sep + os.pardir + os.sep + os.pardir)
+    with open(os.path.join(global_dir, 'frequency_of_each_class_train.pkl'), 'rb') as f:
+        frequency_of_each_class_train = pickle.load(f)
     # ===== count the number of times each class is labeled correctly =======
     class_list = list(label_decoder_dict.keys())[: true_labels.max() + 1]
     acc = true_labels == predicted_labels
@@ -625,11 +632,11 @@ def plot_acc_per_class(predicted_labels, true_labels, label_decoder_dict, save_p
         counter_correct_labeled[true_label.item()] += acc[index].item()
     # ==== calculate the accuracy to predict each class =====
     acc_per_class = []
-    mean_frequency = sum(list(frequency_of_each_class.values())) / len(frequency_of_each_class)
+    mean_frequency = sum(list(frequency_of_each_class_train.values())) / len(frequency_of_each_class_train)
     classes_with_lower_frequency_compare_to_average = []
     for class_ in class_list:
         acc_per_class += [counter_correct_labeled[class_] / frequency_of_each_class[class_] * 100]
-        if frequency_of_each_class[class_] <= (0.9 * mean_frequency):
+        if frequency_of_each_class_train[class_] <= (0.9 * mean_frequency):
             classes_with_lower_frequency_compare_to_average += [class_]
     acc_classes_with_lower_frequency_compare_to_average = [acc_per_class[class_] for class_ in
                                                            classes_with_lower_frequency_compare_to_average]
