@@ -187,11 +187,11 @@ from the confusion matrix, shown below, we can see that model something confused
   To test if the classification accuracy correlates with the frequency of each class, I plotted the accuracy of each class and marked in 'red' all of the classes that their frequency in the train dataset is lower than 90% of the average.
    From the results, shown below, we can see that their isn't a tight correlation and that there are classes that their classification accuracy is low and their frequency is high. 
 
-   ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/The_accuracy_score_for_each_class.png)
+   ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/The_accuracy_score_for_each_class.png)<!-- .element height="50%" width="50%" -->
 
 - _**Diverse human actions video test mode**_ - In this test the model reached a classification accuracy of **75.06%**.
     ** add the movie
-    In order to shed some light on why the model reached lower classification accuracy score than the score in the basic test mode,
+    In order to shed some light on why the model reached lower classification accuracy than the classification accuracy reached in the basic test mode,
      I analyzed the ability of the model to classify an action as a function of the number of frames we have from the first action in the sliding window. [A reminder what we did in this test mode](#diverse-human-actions-video-test-mode) 
 
         * add results
@@ -201,10 +201,10 @@ from the confusion matrix, shown below, we can see that model something confused
      When it has 4 frames from the first action the classification accuracy decreases but not by much. 
      When the number of frames become similar (in the case of 3 frames from the first action or 3 frames 
      from the second action) the classification accuracy decrease by ~80% (in this specific run). 
-     This means that the model doesn't follow the rule I set which determined that
+     This means that the model doesn't follow the rule I set. The rule which determine that
      the true label of the window is set according to the majority of the frames.
      Could it be that in this scenario the model predicts the second action and not the first as I thought?
-     (This would explain the decrease in the classification accuracy of a window with 3 frames from the first action but not the decrease with a window of 3 frames from the second action ) 
+     (This would explain the decrease in the classification accuracy of a window with 3 frames from the first action but not the decrease of a window with 3 frames from the second action ) 
        
        *add figure
       

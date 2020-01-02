@@ -678,7 +678,7 @@ def plot_sliding_window_prediction_for_each_frame(continues_labels, predicted_la
     labels_one_hot = create_one_hot_vector_matrix(continues_labels.numpy(), max_label_code)
     labels_one_hot = labels_one_hot * 2
     one_hot_matrix_to_plot = predicted_labels_one_hot + labels_one_hot
-    one_hot_matrix_to_plot = resort_matrix(original_order_of_labels, one_hot_matrix_to_plot)
+    one_hot_matrix_to_plot, labels_new_order = resort_matrix(original_order_of_labels, one_hot_matrix_to_plot)
     one_hot_matrix_to_plot = one_hot_matrix_to_plot[~np.all(one_hot_matrix_to_plot == 0, axis=1)]
     one_hot_matrix_to_plot = np.apply_along_axis(increase_the_error_value_for_non_neighbors_labels, 0,
                                                  one_hot_matrix_to_plot)
@@ -686,16 +686,16 @@ def plot_sliding_window_prediction_for_each_frame(continues_labels, predicted_la
     if 5 not in np.unique(one_hot_matrix_to_plot):
         one_hot_matrix_to_plot = np.vstack((one_hot_matrix_to_plot, np.full((1, one_hot_matrix_to_plot.shape[1]), 5)))
         im = plt.imshow(one_hot_matrix_to_plot[:-1,:], cmap='bwr', aspect='auto')
-        values = ['None', 'Predicted_labels', 'Predicted_labels_next_movie', 'predicted_label_is_true_label']
+        values = ['None', 'Predicted_labels_next_movie', 'true_label', 'predicted_label_is_true_label']
     else:
         im = plt.imshow(one_hot_matrix_to_plot, cmap='bwr', aspect='auto')
-        values = ['None', 'Predicted_labels', 'Predicted_labels_next_movie', 'predicted_label_is_true_label', 'Errors']
+        values = ['None', 'Predicted_labels_next_movie', 'true_label', 'predicted_label_is_true_label', 'Predicted_label_errors']
     skip_x_ticks = math.ceil(len(continues_labels) / 15)
     x_array = np.arange(0, len(continues_labels), skip_x_ticks)
-    y_labels = [label_decoder_dict[label_code.item()] for label_code in original_order_of_labels]
+    y_labels = [label_decoder_dict[label_code] for label_code in labels_new_order]
     plt.ylim(len(y_labels), -0.3)
     plt.xticks(x_array, x_array, fontsize=10)
-    plt.yticks(np.arange(len(original_order_of_labels)), y_labels, fontsize=10)
+    plt.yticks(np.arange(len(labels_new_order)), y_labels, fontsize=10)
     # ==== create coustomize legand to the heat map =====
     colors = [im.cmap(im.norm(value)) for value in range(len(values))]
     patches = [mpatches.Patch(color=colors[i], label=values[i], edgecolor='b') for i in
@@ -716,14 +716,23 @@ def create_one_hot_vector_matrix(array, array_max):
 
 def resort_matrix(labels_order, matrix):
     sorted_matrix = np.zeros(matrix.shape)
-    classes_that_we_ploted = []
+    classes_that_we_plotted = []
     for row_index, label in enumerate(labels_order):
-        if label.item() in classes_that_we_ploted:
+        if label.item() in classes_that_we_plotted:
             pass
         else:
             sorted_matrix[row_index] = matrix[label.item()]
-            classes_that_we_ploted += [label.item()]
-    return sorted_matrix
+            classes_that_we_plotted += [label.item()]
+    index_of_filled_rows = row_index + 1
+    for index in range(len(matrix)):
+        if index in classes_that_we_plotted:
+            pass
+        else:
+            sorted_matrix[index_of_filled_rows] = matrix[index]
+            index_of_filled_rows += 1
+            if np.nonzero(matrix[index])[0].size != 0 and index not in classes_that_we_plotted:
+                classes_that_we_plotted += [index]
+    return sorted_matrix, classes_that_we_plotted
 
 
 def increase_the_error_value_for_non_neighbors_labels(matrix_col):
@@ -749,7 +758,7 @@ def plot_sliding_window_prediction_for_each_frame_no_labels(predicted_labels, sa
         else:
             original_order_of_labels += [label]
     one_hot_matrix_to_plot = create_one_hot_vector_matrix(predicted_labels.numpy(), max(predicted_labels).item())
-    one_hot_matrix_to_plot = resort_matrix(original_order_of_labels, one_hot_matrix_to_plot)
+    one_hot_matrix_to_plot, ____ = resort_matrix(original_order_of_labels, one_hot_matrix_to_plot)
     one_hot_matrix_to_plot = one_hot_matrix_to_plot[~np.all(one_hot_matrix_to_plot == 0, axis=1)]
     fig, ax = plt.subplots(figsize=(12, 10))
     im = ax.imshow(one_hot_matrix_to_plot, cmap='GnBu', aspect='auto')
