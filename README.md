@@ -1,5 +1,5 @@
 # Action Recognition in Video using LRCN
-PyTorch implementation of Long-term Recurrent Convolutional Networks (LRCN) [1](#1.)
+PyTorch implementation of Long-term Recurrent Convolutional Networks (LRCN) [1](#referance)
 
 ## LRCN model
 The following network enables human action recognition in videos.
@@ -7,7 +7,7 @@ The following network enables human action recognition in videos.
 
 The input of the network would be a short 5 frames* video presenting human activity. 
 
-In the train and in the basic test mode the frames would be extracted from raw video taken from [UCF-101](https://www.crcv.ucf.edu/data/UCF101.php) [2](#2.)
+In the train and in the basic test mode the frames would be extracted from raw video taken from [UCF-101](https://www.crcv.ucf.edu/data/UCF101.php) [2](#referance)
 Dataset (using the script preprocessing_data.py, for further information see 'Data Pre-processing' paragraph below). The raw video would be sampled before the extraction of the frames to lower FPS (default from 25 FPS to 2.5 FPS). Then randomly, a start point to sample the video would be generated, and 5 continues frames (total of 2 sec) would be extracted and save as a short video which would be used as the input to the network.
 
 *default settings, can be changed using the train and preprocessing parameters
@@ -79,7 +79,8 @@ python train.py   --sampled_data_path dir_where_extracted_videos_were_saved\
 By default, model checkpoints are saved in the Saved_model_checkpoint directory using the following naming convention:
  epoch_<num_epoch>.pth.tar
 
-- Basic test mode - testing the accuracy of the model on the test video dataset (comes with the UCF-101 Dataset)
+- #####Basic test mode: 
+    testing the accuracy of the model on the test video dataset (comes with the UCF-101 Dataset)
 
 ```
 python test.py   --sampled_data_path dir_where_extracted_videos_were_saved\
@@ -88,7 +89,8 @@ python test.py   --sampled_data_path dir_where_extracted_videos_were_saved\
                  --model_name add_saved_checkpoint_name    
 ```
 
-- Diverse human actions video test mode - testing the accuracy of the model on a 156 frames** video showing diverse human actions.
+- ##### Diverse human actions video test mode:
+    testing the accuracy of the model on a 156 frames** video showing diverse human actions.
 The video was created by random picking and grouping 5-frames* test videos (down-sampled test videos from the UCF-101 dataset, output of the preprocessing_data.py script).
 
    ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/raw_continues_movie_1.gif)
@@ -115,7 +117,8 @@ python test_continues_movie.py   --sampled_data_path dir_where_extracted_videos_
                                  --model_name add_model_name    
 ```    
 
-- Random Youtube video test mode -  testing the accuracy of the model in predicting the human action happening in a random youtube video (downloaded from youtube in mp4 format).
+- #####Random Youtube video test mode:
+  testing the accuracy of the model in predicting the human action happening in a random youtube video (downloaded from youtube in mp4 format).
   
   First the youtube video is down-sampled so the final FPS would be the same as the down-sampled train UCF-101 dataset. (This data pre-precessing could be: 1. 'live' meaning without directly running preprocessing_data.py and saving the down-sampled data. 2. It could run in steps. first running the preprocessing_data.py and saving the down-sampled data and than running the youtube test mode )
   Than, similar to what happens in 'Diverse human actions video test mode' a sliding window of X frames (args.num_frames_to_sample) would be passed on the down-sampled video,
@@ -167,9 +170,9 @@ python test_Youtube_videos.py   --row_data_dir dir_of_the_row_data_videos\
 ## Results
 The train model that was tested below was trained on a randomly chosen train/test set (from the 3 possible provided by UCF-101 dataset).
 The model was trained and thus, tested on 55 classes from the 101 possible classes in UCF-101 dataset.
-- Basic test mode:  The model reached a classification accuracy of **90.5%**.
+- _**Basic test mode**_:  The model reached a classification accuracy of **90.5%**.
 
-In order to understand the ability of the model to classify correctly each class I run a confusion matrix.
+    In order to understand the ability of the model to classify correctly each class I run a confusion matrix.
 from the confusion matrix, shown below, we can see that model something confused relatively similar classes, for example: 'Military Parade' with 'Band marching' and 'Haircut' with 'Blow Dry Hair'.
 
    ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/Normalized_confusion_matrix.png)
@@ -186,10 +189,10 @@ from the confusion matrix, shown below, we can see that model something confused
 
    ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/The_accuracy_score_for_each_class.png)
 
-- Diverse human actions video test mode - In this test the model reached a classification accuracy of **75.06%**.
+- _**Diverse human actions video test mode**_ - In this test the model reached a classification accuracy of **75.06%**.
     ** add the movie
     In order to shed some light on why the model reached lower classification accuracy score than the score in the basic test mode,
-     I analyzed the ability of the model to classify an action as a function of the number of frames we have from the first action in the sliding window. [A reminder what we did in this test mode](#Diverse human actions video test mode) 
+     I analyzed the ability of the model to classify an action as a function of the number of frames we have from the first action in the sliding window. [A reminder what we did in this test mode](#diverse-human-actions-video-test-mode) 
 
         * add results
         
