@@ -187,10 +187,12 @@ from the confusion matrix, shown below, we can see that model something confused
   To test if the classification accuracy correlates with the frequency of each class, I plotted the accuracy of each class and marked in 'red' all of the classes that their frequency in the train dataset is lower than 90% of the average.
    From the results, shown below, we can see that their isn't a tight correlation and that there are classes that their classification accuracy is low and their frequency is high. 
 
-    <img src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/The_accuracy_score_for_each_class.png" width="100">
+    <img src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/The_accuracy_score_for_each_class.png" width="500">
 
 - _**Diverse human actions video test mode**_ - In this test the model reached a classification accuracy of **75.06%**.
+   
     ** add the movie
+   
     In order to shed some light on why the model reached lower classification accuracy than the classification accuracy reached in the basic test mode,
      I analyzed the ability of the model to classify an action as a function of the number of frames we have from the first action in the sliding window. [A reminder what we did in this test mode](#diverse-human-actions-video-test-mode) 
 
