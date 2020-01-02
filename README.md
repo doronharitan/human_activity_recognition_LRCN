@@ -181,7 +181,7 @@ from the confusion matrix, shown below, we can see that model something confused
    The frequency of each class in the train/validation and in the test set can be seen below. We can see that their are classes that have lower representation in the dataset. for example 'Blowing Candles'
    
    <p align="left"><img width="400" height="300" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/train_val.jpg">
-   <p align="right"><img width="400" height="300" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/test.jpg"></p>
+   <img width="400" height="300" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/test.jpg"></p>
 
   To test if the classification accuracy correlates with the frequency of each class, I plotted the accuracy of each class and marked in 'red' all of the classes that their frequency in the train dataset is lower than 90% of the average.
    From the results, shown below, we can see that their isn't a tight correlation and that there are classes that their classification accuracy is low and their frequency is high. 
