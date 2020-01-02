@@ -2,7 +2,7 @@ import torch
 import os
 from torch import nn
 from utils_action_recognition import set_project_folder_dir, \
-    save_setting_info, load_test_data, get_small_dataset_dataloader_test, plot_label_distribution, \
+    save_setting_info, load_test_data, plot_label_distribution, \
     plot_images_with_predicted_labels, save_loss_info_into_a_file, test_model_continues_movie, create_folder_dir_if_needed, \
     check_if_batch_size_bigger_than_num_classes
 from create_dataset import UCF101Dataset, UCF101DatasetSampler
@@ -28,7 +28,7 @@ def main():
     dataset = UCF101Dataset(args.sampled_data_dir, [test_videos_names, labels], mode='test')
     sampler = UCF101DatasetSampler(dataset, args.batch_size)
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, sampler=sampler)
-    plot_label_distribution(dataloader, folder_dir, args.smaller_dataset, label_decoder_dict, mode='test')
+    plot_label_distribution(dataloader, folder_dir, args.load_all_data_to_RAM, label_decoder_dict, mode='test')
     print('Data prepared\nLoading model...')
     num_class = len(label_decoder_dict) if args.number_of_classes is None else args.number_of_classes
     model = ConvLstm(args.latent_dim, args.hidden_size, args.lstm_layers, args.bidirectional, num_class)
