@@ -207,7 +207,7 @@ from the confusion matrix, shown below, we can see that model something confused
      Could it be that in this scenario the model predicts the second action and not the first as I thought?
      (This would explain the decrease in the classification accuracy of a window with 3 frames from the first action but not the decrease of a window with 3 frames from the second action ) 
      
-     <p align="center"><img width="400" height="300" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/change_in_accuracy_with_the_movment_of_sliding_window.png"></p>
+     <p align="center"><img width="500" height="400" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/change_in_accuracy_with_the_movment_of_sliding_window.png"></p>
       
      The above results indecates that ....
 ## Referance
