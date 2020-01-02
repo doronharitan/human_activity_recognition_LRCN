@@ -6,7 +6,7 @@ from tqdm import tnrange, tqdm_notebook #used when I run in colab/GCloud
 import os
 
 parser = argparse.ArgumentParser(description='UCF101 Action Recognition preprocessing data, LRCN architecture')
-parser.add_argument('--row_data_dir', default=r'C:\Users\Doron\Desktop\ObjectRecognition data\UCF101_row_data', type=str,
+parser.add_argument('--row_data_dir', default=r'C:\Users\Doron\Desktop\ObjectRecognition data\youtube_videos', type=str,
                     help='path to find the UCF101 row data')
 parser.add_argument('--ucf_list_dir',
                     default=r'C:\Users\Doron\Desktop\ObjectRecognition\Data_UCF101\UCF101_video_list',
@@ -16,7 +16,7 @@ parser.add_argument('--ucf101_fps', default=25, type=int, help='FPS of the UCF10
 parser.add_argument('--num_frames_to_extract', default=5, type=int, help='The number of frames what would be extracted from each video')
 parser.add_argument('--video_file_name', default='y2mate.com - cute_happy_baby_crawling_BkJ6FJ2jJEQ_360p.mp4', type=str,
                     help='the video file name we would process, if none the script would run on all of the video files in the folder')
-parser.add_argument('--dataset', default='UCF101', type=str,
+parser.add_argument('--dataset', default='youtube', type=str,
                     help='the dataset name. options = youtube, UCF101')
 
 
@@ -53,13 +53,13 @@ def main_procesing_data(args, folder_dir, sampled_video_file=None, processing_mo
             for file_name in os.listdir(args.row_data_dir):
                 video_test, video_original_size = capture_and_sample_video(args.row_data_dir, file_name, 'all', args.sampling_rate, 'Not known',
                                          folder_dir, args.ucf101_fps, processing_mode)
-                video_original_size_dict[file_name] = video_original_size
+                video_original_size_dict[file_name.split('.mp4')[0]] = video_original_size
         else:
             file_name = args.video_file_name if sampled_video_file is None else sampled_video_file[0]
             video_test, video_original_size = capture_and_sample_video(args.row_data_dir, file_name, 'all', args.sampling_rate, 'Not known',
                                      folder_dir, args.ucf101_fps, processing_mode)
-            video_original_size_dict[file_name] = video_original_size
-        save_video_original_size_dict(video_original_size_dict, save_path)
+            video_original_size_dict[file_name.split('.mp4')[0]] = video_original_size
+        save_video_original_size_dict(video_original_size_dict, folder_dir)
         if processing_mode == 'live':
             return video_test, video_original_size
 

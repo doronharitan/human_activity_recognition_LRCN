@@ -236,8 +236,8 @@ def foward_step_no_labels(model, images):
     model.Lstm.reset_hidden_state()
     with torch.no_grad():
         output = model(images)
-    predicted_labels = output.detach().argmax(dim=1)
-    return predicted_labels.cpu()
+    predicted_labels = output.detach().cpu().argmax(dim=1)
+    return predicted_labels
 
 
 def foward_step(model, images, labels, criterion, mode=''):  # predections
@@ -342,7 +342,7 @@ def test_model_continues_movie_youtube(model, data, device, save_path, label_dec
         dataloader_iter = iter(data)
         images = next(dataloader_iter)
         images = images.squeeze(0)
-        video_original_size = video_original_size[dataloader_iter.dataset.images]
+        video_original_size = video_original_size[dataloader_iter._dataset.images[0].split('.avi')[0]]
     else:
         images = data
     num_frames_to_sample = 5
@@ -358,7 +358,7 @@ def test_model_continues_movie_youtube(model, data, device, save_path, label_dec
     create_video_with_labels(save_path, 'Video_with_prediction_vs_true_labels.avi',
                              images[:len(images) - num_frames_to_sample + 1], None, predicted_labels,
                              label_decoder_dict,
-                             video_original_size=video_original_size, fps=5)
+                             video_original_size=video_original_size, fps=5, mode='youtube')
 
 
 def create_sliding_window_x_frames_size_dataset(local_images, local_labels, num_frames_to_sample,
@@ -482,7 +482,7 @@ def create_video_with_labels(save_path, video_name, image_array, continues_label
     if mode != 'youtube':
         h_ax = h_fig.add_axes([0.08, 0.25, 0.85, 0.8])
     else:
-        h_ax = h_fig.add_axes([0.0, 0.2, 0.85, 0.85])
+        h_ax = h_fig.add_axes([0.03, 0.1, 0.95, 0.95])
     img = (image_array[0] - image_array[0].min()) / (image_array[0].max() - image_array[0].min())
     h_im = h_ax.matshow(img)
     h_ax.set_axis_off()
@@ -492,7 +492,7 @@ def create_video_with_labels(save_path, video_name, image_array, continues_label
     if mode != 'youtube':
         h_ax_plot = h_fig.add_axes([0.08, 0.25, 0.85, 0.05])
     else:
-        h_ax_plot = h_fig.add_axes([0., 0.07, 0.9, 0.04])
+        h_ax_plot = h_fig.add_axes([0.03, 0.25, 0.95, 0.04])
     # h_ax_plot = h_fig.add_axes([0.1, 0.22, 0.8, 0.06])
     x_array = np.arange(len(predicted_labels)) + 0.5
     y_array = np.zeros(len(x_array))
@@ -556,6 +556,8 @@ def capture_and_sample_video(row_data_dir, video_name, num_frames_to_extract, sa
     image_array = []
     if num_frames_to_extract == 'all':
         num_frames_to_extract = int(num_frames / sampling_rate) if sampling_rate != 0 else num_frames
+    if processing_mode == 'live':
+        transform = set_transforms(mode='test')
     for frame in range(num_frames_to_extract):
         video.set(1, sample_start_point)
         success, image = video.read()
@@ -565,14 +567,14 @@ def capture_and_sample_video(row_data_dir, video_name, num_frames_to_extract, sa
             RGB_img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) if processing_mode == 'live' else image
             image = Image.fromarray(RGB_img.astype('uint8'), 'RGB')
             if processing_mode == 'live':
-                image_array += [image]
+                image_array += [transform(image)]
             else:
                 image_array += [np.uint8(image)]
         sample_start_point = sample_start_point + sampling_rate
     video.release()
     if processing_mode == 'main':
         create_new_video(save_path, video_name, image_array)
-    return image_array, [video_height, video_width]
+    return image_array, [video_width, video_height]
 
 
 def load_test_data(model_dir, mode='load_all'):
@@ -784,8 +786,9 @@ def set_text_to_video_frame(continues_labels, label_decoder_dict, predicted_labe
                             frame='start', bool_array=None):
     if frame == 'start':
         height = 0.07 if mode != 'youtube' else 0.12
+        fontsize = 5 if mode!= 'youtube' else 8
         h_text_1 = plt.text(0.18, height, 'Predicted labels - {}'.format(label_decoder_dict[predicted_labels[0].item()]),
-                            color='blue', fontsize=5, transform=plt.gcf().transFigure)
+                            color='blue', fontsize=fontsize, transform=plt.gcf().transFigure)
         if continues_labels is not None:
             h_text_2 = plt.text(0.18, 0.11, 'Original_labels', color='black', fontsize=5,
                                 transform=plt.gcf().transFigure)
