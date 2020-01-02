@@ -90,8 +90,8 @@ python test.py   --sampled_data_path dir_where_extracted_videos_were_saved\
 
 - Diverse human actions video test mode - testing the accuracy of the model on a 156 frames** video showing diverse human actions.
 The video was created by random picking and grouping 5-frames* test videos (down-sampled test videos from the UCF-101 dataset, output of the preprocessing_data.py script).
-    
-    ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/raw_continues_movie.gif)
+
+    ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/raw_continues_movie_1.gif)
 
     
    In this test mode a sliding window of X frames (args.num_frames_to_sample) would be passed on the continues video,
