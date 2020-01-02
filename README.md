@@ -93,7 +93,8 @@ python test.py   --sampled_data_path dir_where_extracted_videos_were_saved\
 - Diverse human actions video test mode - testing the accuracy of the model on a 156 frames** video showing diverse human actions.
 The video was created by random picking and grouping 5-frames* test videos (down-sampled test videos from the UCF-101 dataset, output of the preprocessing_data.py script).
     
-    *** add row video
+    ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/raw_continues_movie.gif)
+
     
    In this test mode a sliding window of X frames (args.num_frames_to_sample) would be passed on the continues video,
    creating a stack of x-frames videos that can be used as an input to the LRCN network (note that the args.num_frames_to_sample have to be equal to the args.num_frames_to_sample used in the pre-processing of the data and in the training of the network).
@@ -101,7 +102,7 @@ The video was created by random picking and grouping 5-frames* test videos (down
    meaning if the sliding window has 3 frames from the first action and two from the next action ,the label of the sliding
    window would be the first action
       
-       *** add figure
+    ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/Video_with_prediction_vs_true_labels.gif)
 
    In this mode we also test how accurate the model is when the 5-frames* model input consistent from different human actions (for example the first 3 frames are form one video 
    and the last two are the start of a second video).
