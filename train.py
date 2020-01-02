@@ -14,7 +14,7 @@ import os
 
 parser = argparse.ArgumentParser(description='UCF101 Action Recognition, LRCN architecture')
 parser.add_argument('--epochs', default=100, type=int, help='number of total epochs')
-parser.add_argument('--batch-size', default=32, type=int, help='mini-batch size (default:32)')
+parser.add_argument('--batch-size', default=16, type=int, help='mini-batch size (default:32)')
 parser.add_argument('--lr', default=5e-4, type=float, help='initial learning rate (default:5e-4')
 parser.add_argument('--num_workers', default=4, type=int,
                     help='initial num_workers, the number of processes that generate batches in parallel (default:4)')

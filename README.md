@@ -90,7 +90,7 @@ python test.py   --sampled_data_path dir_where_extracted_videos_were_saved\
 ```
 
 - ##### Diverse human actions video test mode:
-    testing the accuracy of the model on a 156 frames** video showing diverse human actions.
+    testing the accuracy of the model on a 80 frames** video showing diverse human actions.
 The video was created by random picking and grouping 5-frames* test videos (down-sampled test videos from the UCF-101 dataset, output of the preprocessing_data.py script).
 
    In this test mode a sliding window of X frames (args.num_frames_to_sample) would be passed on the continues video,
@@ -187,7 +187,7 @@ from the confusion matrix, shown below, we can see that model something confused
 
     <img src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/The_accuracy_score_for_each_class.png" width="650">
 
-- _**Diverse human actions video test mode**_ - In this test the model reached a classification accuracy of **78.8%**.
+- _**Diverse human actions video test mode**_ - In this test the model reached a classification accuracy of **73.6%**.
    
    ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/Video_with_prediction_vs_true_labels.gif) 
    
