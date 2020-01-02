@@ -188,6 +188,7 @@ from the confusion matrix, shown below, we can see that model something confused
    From the results, shown below, we can see that their isn't a tight correlation and that there are classes that their classification accuracy is low and their frequency is high. 
 
     <img src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/The_accuracy_score_for_each_class.png" width="800">
+    <img src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/The_accuracy_score_for_each_class.png" hight="100">
 
 - _**Diverse human actions video test mode**_ - In this test the model reached a classification accuracy of **75.06%**.
    
