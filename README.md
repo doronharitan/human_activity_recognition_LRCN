@@ -196,9 +196,9 @@ from the confusion matrix, shown below, we can see that model something confused
      I analyzed the ability of the model to classify an action as a function of the number of frames we have from the first action in the sliding window. [A reminder what we did in this test mode](#diverse-human-actions-video-test-mode) 
      
      The results show that the classification accuracy depend on the number of frames we have from each class. 
+     <img align="right" width="300" height="250" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/analysis_of_predicted_labels_in_sliding_window.png">
      When all of the frames are from one action (5 frames) the model has high classification accuracy.
      When it has 4 frames from the first action the classification accuracy decreases but not by much. 
-     <img align="right" width="300" height="250" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/analysis_of_predicted_labels_in_sliding_window.png">
      When the number of frames become similar (in the case of 3 frames from the first action or 3 frames 
      from the second action) the classification accuracy decrease by ~80% (in this specific run). 
      This means that the model doesn't follow the rule I set. The rule which determine that
