@@ -35,7 +35,7 @@ def main():
     save_setting_info(args, device, folder_dir)
     label_decoder_dict = load_test_data(args.model_dir, mode='load_label_decoder_dict')
     print('Loading model...')
-    num_class = len(label_decoder_dict) if args.number_of_classes is None else args.number_of_classes #todo can I load this form the modl?
+    num_class = len(label_decoder_dict) if args.number_of_classes is None else args.number_of_classes
     model = ConvLstm(args.latent_dim, args.hidden_size, args.lstm_layers, args.bidirectional, num_class)
     model = model.to(device)
     checkpoint = torch.load(os.path.join(args.model_dir, args.model_name))
