@@ -79,7 +79,7 @@ python train.py   --sampled_data_path dir_where_extracted_videos_were_saved\
 By default, model checkpoints are saved in the Saved_model_checkpoint directory using the following naming convention:
  epoch_<num_epoch>.pth.tar
 
-- ##### _Basic test mode_: 
+- #### _Basic test mode_:
     Testing the accuracy of the model on the test dataset (comes with the UCF-101 Dataset)
 
 ```
