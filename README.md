@@ -225,6 +225,7 @@ from the confusion matrix, shown below, we can learn that model something confus
 
 - _**Random Youtube video test mode**_ - In this test, the model classified correctly the action happening in the video 91.8% of the time.
     
+     <p align="center"><img src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/youtube_test.gif"></p>
 
       
       
