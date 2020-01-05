@@ -69,13 +69,13 @@ python preprocessing_data.py –-sampled_data_dir dir_where_extracted_videos_wou
 ##  Train and test modes
 *Default args parameters to train and test modes are detailed below
 
-#### Train mode
+### Train mode
 ```
 python train.py   --sampled_data_path dir_where_extracted_videos_were_saved\
                   --ucf_list_dir add_dir    
 ```
 
-#### Test modes:
+### Test modes:
 By default, model checkpoints are saved in the Saved_model_checkpoint directory using the following naming convention:
  epoch_<num_epoch>.pth.tar
 
@@ -89,7 +89,7 @@ python test.py   --sampled_data_path dir_where_extracted_videos_were_saved\
                  --model_name add_saved_checkpoint_name    
 ```
 
-- ##### _Diverse human actions video test mode_:
+- #### _Diverse human actions video test mode_:
 
     Testing the accuracy of the model on a 80 frames** video showing diverse human actions.
 The video was created by random picking and grouping 5-frame* test videos (down-sampled test videos from the UCF-101 dataset, output of the preprocessing_data.py script).
@@ -116,7 +116,7 @@ python test_continues_movie.py   --sampled_data_path dir_where_extracted_videos_
                                  --model_name add_model_name    
 ```    
 
-- ##### _Random Youtube video test mode_:
+- #### _Random Youtube video test mode_:
 
   Testing the accuracy of the model in predicting the human action happening in a random youtube video (downloaded from youtube in mp4 format).
   
@@ -196,24 +196,38 @@ from the confusion matrix, shown below, we can learn that model something confus
    
    <p align="center"><img width="400" height="400" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/Video_with_prediction_vs_true_labels.gif"></p>
    
+    * Correct classification are marked in green whereas, false classification is marked in random color (each color has its own color)
+    
     In order to shed some light on why the model reached lower classification accuracy than the classification accuracy reached in the basic test mode,
-     I analyzed the ability of the model to classify an action as a function of the number of frames we have from the first action in the sliding window. [A reminder what we did in this test mode](#diverse-human-actions-video-test-mode) 
+     I analyzed the ability of the model to classify an action as a function of the number of frames we have from the first action in a sliding window. [A reminder what we did in this test mode](#diverse-human-actions-video-test-mode) 
      
      <p align="center"><img width="300" height="250" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/analysis_of_predicted_labels_in_sliding_window.png"></p>
         
      The results show that the classification accuracy depend on the number of frames we have from each class. 
      When all of the frames are from one action (5 frames) the model has high classification accuracy.
-     When it has 4 frames from the first action the classification accuracy decreases but not by much. 
-     When the number of frames become similar (in the case of 3 frames from the first action or 3 frames 
-     from the second action) the classification accuracy decrease by ~80% (in this specific run). 
-     This means that the model doesn't follow the rule I set. The rule which determine that
-     the true label of the window is set according to the majority of the frames.
-     Could it be that in this scenario the model predicts the second action and not the first as I thought?
-     (This would explain the decrease in the classification accuracy of a window with 3 frames from the first action but not the decrease of a window with 3 frames from the second action ) 
+     But, with the decrease in the number of frames we have also, a decrease in the classification accuracy.
+     When the number of frames become similar (in the case of 3 frames from the first action and 2 frames 
+     from the second action) the classification accuracy decrease by ~60% (in this specific run). 
+     This means that the model doesn't fully follow the rule I set. The rule which determine that
+     the true label of the window is set according to the action that has the majority of frames.
      
-     <p align="center"><img width="700" height="400" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/change_in_accuracy_with_the_movment_of_sliding_window.png"></p>
+     What does the model predict when it miss classify an action?  Could it be that he model predicts the second action
+     in the window although it doesn't have the majority of frames? or it predicts another action all togther. 
+     To check this, I plotted an heatmap that maps when: 1. the true label and the predicted one are equal (light orange).
+      2. when the predicted label is for the second action in the window, although the majority of the frames are from the first action, thus the true label is the first action (royalblue and light blue respectively)
+      3. when the predicted label doesn't equal the true label or the second action in the window (red).
+     
+     <p align="center"><img src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/change_in_accuracy_with_the_movment_of_sliding_window.png"></p>
       
-     The above results indecates that ....
+     The above results shows that in 40% of the cases (6/15) the model predicts the second action in the window although the majority of the frames is for the first action. This indicates that the last frames in the window could have higher influence in the classification
+      of the action, but further work is needed in order to prove it. for example 1. repeat this experiment multiple times with different videos and see if the results are consistent. 2. Track of the prediction of the LSTM changes with each frame . 3. investigate what is the weight of the LSTM forget gate.
+      Surprisingly, the classes the network misclassified as an action that wasn't in the window at all, weren't classifiy as similar classes, meaning I didn't sse a correlation with the results in the confusion matrix. for example 'Golf Swing' was classified as 'Frisbee Catch' and not as 'Jumping Jack'.
+
+- _**Random Youtube video test mode**_ - In this test, the model classified correctly the action happening in the video 91.8% of the time.
+    
+
+      
+      
 ## Referance
 1. Donahue, Jeffrey, et al. "Long-term recurrent convolutional networks for visual recognition and description." Proceedings of the IEEE conference on computer vision and pattern recognition. 2015.
 2. Soomro, Khurram, Amir Roshan Zamir, and Mubarak Shah. "UCF101: A dataset of 101 human actions classes from videos in the wild." arXiv preprint arXiv:1212.0402 (2012).
