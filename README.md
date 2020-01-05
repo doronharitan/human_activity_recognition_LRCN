@@ -80,6 +80,7 @@ By default, model checkpoints are saved in the Saved_model_checkpoint directory 
  epoch_<num_epoch>.pth.tar
 
 - #####Basic test mode: 
+    
     Testing the accuracy of the model on the test dataset (comes with the UCF-101 Dataset)
 
 ```
@@ -90,7 +91,8 @@ python test.py   --sampled_data_path dir_where_extracted_videos_were_saved\
 ```
 
 - ##### Diverse human actions video test mode:
-    testing the accuracy of the model on a 80 frames** video showing diverse human actions.
+
+    Testing the accuracy of the model on a 80 frames** video showing diverse human actions.
 The video was created by random picking and grouping 5-frame* test videos (down-sampled test videos from the UCF-101 dataset, output of the preprocessing_data.py script).
 
    In this test mode a sliding window of X frames (args.num_frames_to_sample) would be passed on the continues video,
@@ -116,6 +118,7 @@ python test_continues_movie.py   --sampled_data_path dir_where_extracted_videos_
 ```    
 
 - #####Random Youtube video test mode:
+
   Testing the accuracy of the model in predicting the human action happening in a random youtube video (downloaded from youtube in mp4 format).
   
   First the youtube video is down-sampled so the final FPS would be the same as the down-sampled train UCF-101 dataset (In this case, the data pre-precessing could be:  1.
