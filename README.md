@@ -51,14 +51,14 @@ confusion matrix.
 The Confusion matrix suggests that the model confuses similar classes such as 
 'Military Parade' with 'Band marching' and 'Haircut' with 'Blow Dry Hair'.
 
-   <p align="center"><img width="650" height="550" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/Normalized_confusion_matrix.png"></p>
+   <p align="center"><img width="650" height="550" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figures/Normalized_confusion_matrix.png"></p>
    
    
 Could the class confusion be an artifact of an unbalanced data, or is it truly due to class similarity?
 
 First I examined how many data points are there in each class. As shown in the figure the classes are slightly imbalanced (See ‘Blowing Candles’ class)
    
-   <p align="center"><img width="650" height="400" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/train_val.jpg">
+   <p align="center"><img width="650" height="400" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figures/train_val.jpg">
 
   To test if the classification accuracy drops with mis-represented class ,
    I plotted the accuracy of each class and marked in red all of the misrepresented ones. 
@@ -66,7 +66,7 @@ First I examined how many data points are there in each class. As shown in the f
    We don’t see significant correlation due to contradicting examples such as ‘Jumping rope’ and
     ‘Apply Lipstick’.
 
-   <p align="center"><img width="600" height="500" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/The_accuracy_score_for_each_class.png"></p>
+   <p align="center"><img width="600" height="500" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figures/The_accuracy_score_for_each_class.png"></p>
 
 
 ## Diverse human actions video test mode:
@@ -85,19 +85,19 @@ when 2 of the frames describes 'applying makeup' and the other 3 describes 'craw
   from a single action: Each fragment can span up to 2 different actions, see image below)
    
   
-   ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/what_is_sliding_window.gif)
+   ![alt text](https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figures/what_is_sliding_window.gif)
 
 In this test the model reached a classification accuracy of **73.6%**. 
 The inferior accuracy is explained by the frequent action transitions.
    
-<p align="center"><img width="400" height="400" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/Video_with_prediction_vs_true_labels.gif"></p>
+<p align="center"><img width="400" height="400" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figures/Video_with_prediction_vs_true_labels.gif"></p>
  * Correct classification are marked in green. False classification is marked in another color (each class has its own color).
     
 
  I analyzed the accuracy of the model as a function of the number of frames from the 
  first action in the N frame window. 
      
-  <p align="center"><img width="300" height="250" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/analysis_of_predicted_labels_in_sliding_window.png"></p>
+  <p align="center"><img width="300" height="250" src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figures/analysis_of_predicted_labels_in_sliding_window.png"></p>
         
 The results indicate that the classification accuracy depend on the number of frames from each class. 
 When all of the frames belong to one action (N=5 frames) the model has high classification accuracy.
@@ -111,7 +111,7 @@ The accuracy decreases with the number of frames of one class, down to ~60% in c
 3. when the predicted label is for the second action in the window, although the majority of the frames are from the first action.Reminder:The true label is the first action (blue and light blue respectively)
 4. when the predicted label doesn't equal the true label or the second action in the window (red).
      
-     <p align="center"><img src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/change_in_accuracy_with_the_movment_of_sliding_window.png"></p>
+     <p align="center"><img src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figures/change_in_accuracy_with_the_movment_of_sliding_window.png"></p>
       
  The above results show that in 40% of the cases (6/15) the model predicts the second action in the window although the majority of the frames are from the first action. This indicates that the last frames in the window could have higher influence in the classification
       of the action. This observation can be studied by:
@@ -126,7 +126,7 @@ The performance of the model is tested on videos taken from youtube.
 Similarly to the previous test, the video is down-sampled to match the FPS of the training data set. The model produces a sequence of labels by predicting the action accruing in each N-frames of the sliding window.
 
 The model classified correctly 91.8% of the frames in a video of a single action. 
-     <p align="center"><img src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figuers/youtube_test.gif"></p>
+     <p align="center"><img src="https://github.com/doronharitan/human_activity_recognition_LRCN/blob/master/figures/youtube_test.gif"></p>
 
 ## Referance
 1. Donahue, Jeffrey, et al. "Long-term recurrent convolutional networks for visual recognition and description." Proceedings of the IEEE conference on computer vision and pattern recognition. 2015.
