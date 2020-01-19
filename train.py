@@ -21,7 +21,7 @@ parser.add_argument('--num_workers', default=4, type=int,
 parser.add_argument('--split_size', default=0.2, type=int, help='set the size of the split size between validation '
                                                                 'data and train data')
 parser.add_argument('--sampled_data_dir',
-                    default=r'C:\Users\Doron\Desktop\ObjectRecognition data\youtube_sampled_data_video_sampling_rate_10_num frames extracted_5',
+                    default=r'C:\Users\Doron\Desktop\ObjectRecognition data\UCF101_sampled_data_video_sampling_rate_10_num frames extracted_5',
                     type=str, help='The dir for the sampled row data')
 parser.add_argument('--ucf_list_dir', default=r'C:\Users\Doron\Desktop\ObjectRecognition\Data_UCF101\UCF101_video_list',
                     type=str, help='path to find the UCF101 list, splitting the data to train and test')
