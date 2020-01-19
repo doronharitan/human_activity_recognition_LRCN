@@ -3,7 +3,6 @@ import torch
 import numpy as np
 from PIL import Image
 import os
-import torchvision.transforms as transforms
 import skvideo
 import skvideo.io
 from torch.utils.data.sampler import Sampler

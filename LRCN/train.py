@@ -3,8 +3,8 @@ import torch.nn as nn
 import argparse
 import time
 from torch.utils.data import DataLoader
-from create_dataset import UCF101Dataset
-from lrcn_model import ConvLstm
+from LRCN.create_dataset import UCF101Dataset
+from LRCN.lrcn_model import ConvLstm
 from utils_action_recognition import save_setting_info, plot_label_distribution, \
     plot_images_with_predicted_labels,  create_folder_dir_if_needed, load_all_dataset_to_RAM, split_data, \
     test_model, train_model, save_loss_info_into_a_file, set_project_folder_dir

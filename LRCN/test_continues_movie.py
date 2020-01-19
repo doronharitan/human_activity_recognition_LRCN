@@ -3,12 +3,12 @@ import os
 from torch import nn
 from utils_action_recognition import set_project_folder_dir, \
     save_setting_info, load_test_data, plot_label_distribution, \
-    plot_images_with_predicted_labels, save_loss_info_into_a_file, test_model_continues_movie, create_folder_dir_if_needed, \
+    plot_images_with_predicted_labels, save_loss_info_into_a_file, test_model_continues_movie, \
     check_if_batch_size_bigger_than_num_classes
-from create_dataset import UCF101Dataset, UCF101DatasetSampler
+from LRCN.create_dataset import UCF101Dataset, UCF101DatasetSampler
 from torch.utils.data import DataLoader
-from lrcn_model import ConvLstm
-from train import parser
+from LRCN.lrcn_model import ConvLstm
+from LRCN.train import parser
 
 parser.add_argument('--model_dir', default=r'C:\Users\Doron\Desktop\ObjectRecognition\20191218-214903\Saved_model_checkpoints', type=str, help='The dir of the model we want to test')
 parser.add_argument('--model_name', default='epoch_30.pth.tar', type=str, help='the name for the model we want to test on')

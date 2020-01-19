@@ -5,10 +5,10 @@ import os
 from utils_action_recognition import set_project_folder_dir, \
     save_setting_info,test_model_continues_movie_youtube, load_test_data, print_error_preprocessing_movie_mode,\
     load_and_extract_video_original_size
-from create_dataset import UCF101Dataset
+from LRCN.create_dataset import UCF101Dataset
 from torch.utils.data import DataLoader
-from lrcn_model import ConvLstm
-from train import parser
+from LRCN.lrcn_model import ConvLstm
+from LRCN.train import parser
 from preprocessing_data import main_procesing_data
 
 parser.add_argument('--model_dir', default=r'C:\Users\Doron\Desktop\ObjectRecognition\20191218-214903\Saved_model_checkpoints', type=str, help='The dir of the model we want to test')

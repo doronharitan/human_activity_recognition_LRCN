@@ -5,10 +5,10 @@ from utils_action_recognition import set_project_folder_dir, \
     save_setting_info, load_test_data, load_all_dataset_to_RAM_test, plot_label_distribution, test_model,\
     plot_images_with_predicted_labels, save_loss_info_into_a_file, create_video_with_labels, \
     plot_confusion_matrix, create_folder_dir_if_needed, plot_acc_per_class
-from create_dataset import UCF101Dataset
+from LRCN.create_dataset import UCF101Dataset
 from torch.utils.data import DataLoader
-from lrcn_model import ConvLstm
-from train import parser
+from LRCN.lrcn_model import ConvLstm
+from LRCN.train import parser
 
 
 parser.add_argument('--model_dir', default=r'C:\Users\Doron\Desktop\ObjectRecognition\20191218-214903\Saved_model_checkpoints',
